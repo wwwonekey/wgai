@@ -139,12 +139,13 @@
 ### 语义模型训练
 ![modelBund](wg/yymoxing.jpg)
 
-##为大家低成本部署AI应用添砖加瓦！
+## 为大家低成本部署AI应用添砖加瓦！
+## 有问题的话可以在知识星球提问后续会拉入微信交流群  不加知识星球有问题请去提issues
 ## 后续更会持续优化视频、图片识别内容
 ### 技术问题社群内都会回答&&以及各种安装环境配置
 ![zfb](wg/shequn.jpg)
-### 微信交流群
-## 加微信技术交流群（目前只有微信交流群）
+### 加入知识星球才会拉去 微信交流群
+##  加微信技术交流群(备注知识星球号)
 ![加交流群](wg/chatpic.jpg) 
 ## 🛡️ License
 [`Apache License, Version 2.0`](https://www.apache.org/licenses/LICENSE-2.0.html)
