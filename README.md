@@ -34,6 +34,7 @@
 > [<span style="color: red;">@gitee仓库地址 https://gitee.com/wggh_admin/wgai</span>](https://gitee.com/wggh_admin/wgai)
 
 >[<span style="color: red;">@github仓库地址 https://github.com/YeyuchenBa/wgai</span>](https://github.com/YeyuchenBa/wgai)
+>[<span style="color: red;">@gitcode仓库地址https://gitcode.com/dromara/wgai</span>](https://github.com/YeyuchenBa/wgai)
 
 # 新功能截图和功能介绍配置
 ### 在线训练&标注内容已经上线开源 支持windwos/linux 国产化服务器部署
