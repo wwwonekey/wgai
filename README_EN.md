@@ -7,7 +7,7 @@
 <a href="README.md">中文文档</a> |<a href="README_EN.md">English Document</a> |
 </h4>
 
-**官网:  [<span style="color: red;">http://116.198.227.105/#/</span>](http://116.198.227.105/#/)**
+**官网:  [<span style="color: red;">https://wgai.dromara.org/#/</span>](https://wgai.dromara.org/#/)**
 
 [![Discord](https://img.shields.io/badge/Chat-Discord-7289DA?logo=discord)](https://discord.gg/Fb6M73htGr)
 [![Reddit](https://img.shields.io/badge/Reddit-Community-7289DA?logo=reddit)](https://www.reddit.com/r/hertzbeat/)
