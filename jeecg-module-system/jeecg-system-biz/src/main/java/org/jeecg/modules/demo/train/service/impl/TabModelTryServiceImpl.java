@@ -27,6 +27,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -233,10 +234,21 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
         }
     }
     public static void main(String[] args) {
-        String zipFilePath = "D:\\opt\\upFiles\\temp\\test_1734439662236.zip";
-        String destDir = "D:\\opt\\upFiles\\temp\\test";
+//        String zipFilePath = "D:\\opt\\upFiles\\temp\\test_1734439662236.zip";
+//        String destDir = "D:\\opt\\upFiles\\temp\\test";
+//
+//        unzipFiles(zipFilePath, destDir);
+        BigDecimal shiji=new BigDecimal("9158");
+        BigDecimal sunhao= new BigDecimal("54883").add(new BigDecimal("-45725"));
 
-        unzipFiles(zipFilePath, destDir);
+        int c=shiji.compareTo(sunhao);
+        if(c<=0){// num1 < num2
+            System.out.println( sunhao+"num1 < num2"+shiji);
+        }else{
+            System.out.println(sunhao+" num1 > num2"+shiji);
+        }
+
+
     }
 
     @Override
@@ -270,6 +282,7 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
                 }
                 this.updateById(tabModelTry);
             } else {
+                tabModelTry.setId(id);
                 tabModelTry.setPicNumber(list.size() + "");
                 this.save(tabModelTry);
             }
@@ -323,6 +336,7 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
             tabModelTryMapper.updateById(tabModelTry);
 
         }catch (Exception ex){
+            ex.printStackTrace();
             return Result.error("标注保存失败");
         }
    
