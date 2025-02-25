@@ -1,10 +1,15 @@
 package org.jeecg.modules.tab.AIModel.V5Util;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.jeecg.modules.demo.video.entity.TabVideoUtil;
 import org.jeecg.modules.tab.AIModel.V5.MapTime;
 import org.jeecg.modules.tab.AIModel.V5.VideoFrameReaderV5;
 import org.jeecg.modules.tab.AIModel.V5.VideoSendReadCfgV5;
+import org.opencv.core.Core;
 import org.opencv.core.Mat;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
@@ -12,6 +17,8 @@ import org.springframework.data.redis.core.RedisTemplate;
 
 import java.util.Arrays;
 import java.util.List;
+
+import static org.jeecg.modules.tab.AIModel.AIModelYolo3.bufferedImageToMat;
 
 /***
  * 读取状态
@@ -103,9 +110,43 @@ public class VideoReadV5Util implements Runnable {
     }
 
     public static void main(String[] args) {
-        List<String> classes = Arrays.asList("person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush");
-        for (int i = 0; i <classes.size() ; i++) {
-            System.out.println(classes.get(i));
+//        List<String> classes = Arrays.asList("person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat", "traffic light", "fire hydrant", "stop sign", "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag", "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket", "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table", "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone", "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush");
+//        for (int i = 0; i <classes.size() ; i++) {
+//            System.out.println(classes.get(i));
+//        }
+        System.load("F:\\JAVAAI\\opencv481\\opencv\\build\\java\\x64\\opencv_java481.dll");
+//        System.out.println(Core.getBuildInformation());
+//        VideoCapture capture = new VideoCapture("rtsp://admin:ch255899@192.168.0.96:554/cam/realmonitor?channel=1&subtype=2");
+//
+//        capture.set(Videoio.CAP_PROP_BUFFERSIZE, 30);  // 缓存3帧
+//        capture.set(Videoio.CAP_PROP_POS_MSEC, 2000); // 设置延迟
+//        if (!capture.isOpened()) {
+//            log.info("无法打开 RTSP 流");
+//        }
+//        Mat frame2 = new Mat();
+//        while (capture.read(frame2)){
+//
+//            System.out.println("xxxx");
+//        }
+
+        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber("rtsp://admin:ch255899@192.168.0.96:554/cam/realmonitor?channel=1&subtype=1");
+        grabber.setPixelFormat(avutil.AV_PIX_FMT_YUV420P);
+        Java2DFrameConverter converter = new Java2DFrameConverter();
+        try {
+            grabber.start();
+            Frame frame;
+            Mat mat = new Mat();
+            while ((frame = grabber.grab()) != null) {
+                if(frame.image!=null){
+                    Mat opencvMat=bufferedImageToMat(   converter.getBufferedImage(frame));
+                    System.out.println("成功读取到一帧");
+                    opencvMat.release();
+                }
+
+            }
+            grabber.stop();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 }

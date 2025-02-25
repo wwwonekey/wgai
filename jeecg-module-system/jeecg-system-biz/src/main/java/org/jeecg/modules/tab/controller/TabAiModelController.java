@@ -56,7 +56,20 @@ public class TabAiModelController extends JeecgController<TabAiModel, ITabAiMode
 		IPage<TabAiModel> pageList = tabAiModelService.page(page, queryWrapper);
 		return Result.OK(pageList);
 	}
-	
+
+	 @ApiOperation(value="AI模型-下发", notes="AI模型-下发")
+	 @PostMapping(value = "/nextModel")
+	 public Result<?> nextModel(@RequestBody TabAiModel tabAiModel ,HttpServletRequest req) {
+
+		 return tabAiModelService.nextModel(tabAiModel);
+	 }
+
+	 @ApiOperation(value="AI模型-接收", notes="AI模型-接收")
+	 @PostMapping(value = "/receiveModel")
+	 public Result<?> receiveModel(@RequestBody TabAiModel tabAiModel ,HttpServletRequest req) {
+
+		 return tabAiModelService.receiveModel(tabAiModel);
+	 }
 	/**
 	 *   添加
 	 *

@@ -39,6 +39,7 @@ import org.jeecgframework.poi.excel.entity.ImportParams;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -69,16 +70,18 @@ public class TabAiSubscriptionController extends JeecgController<TabAiSubscripti
 	 @Autowired
 	 private ITabAiBaseService tabAiBaseService;
 
+	 @Value("${jeecg.path.upload}")
+	 public String uplpadPath;
 	@ApiOperation(value="Ai事件订阅-test", notes="Ai事件订阅-test")
 	@RequestMapping(value = "/subInfo")
-	public List<PushInfo>  getSub(){
+	public List<PushInfo> getSub(){
 		log.info("输出结果");
 		 List<PushInfo> object1= (List<PushInfo> ) redisTemplate.opsForValue().get("sendPush");
 		 //中文写入缓存内容
 		 tabAiBaseService.SendRedisBase();
 
 		 AIModelYolo3  modelYolo3=new AIModelYolo3();
-		 modelYolo3.SendPicThread(redisTemplate);
+		 modelYolo3.SendPicThread(redisTemplate,uplpadPath);
 		return object1;
 	}
 	 @ApiOperation(value="Ai事件订阅-test", notes="Ai事件订阅-test")
