@@ -4,6 +4,33 @@
     <div class="table-page-search-wrapper">
       <a-form layout="inline" @keyup.enter.native="searchQuery">
         <a-row :gutter="24">
+          <a-col :xl="6" :lg="7" :md="8" :sm="24">
+            <a-form-item label="所属模型">
+              <j-search-select-tag placeholder="请选择所属模型" v-model="queryParam.modelId" dict="tab_model_try,model_title,id"/>
+            </a-form-item>
+          </a-col>
+          <a-col :xl="6" :lg="7" :md="8" :sm="24">
+            <a-form-item label="视频类型">
+              <j-dict-select-tag placeholder="请选择视频类型" v-model="queryParam.videoType" dictCode="video_type"/>
+            </a-form-item>
+          </a-col>
+          <template v-if="toggleSearchStatus">
+            <a-col :xl="6" :lg="7" :md="8" :sm="24">
+              <a-form-item label="保存目录(不勾选图片模型库生效)">
+                <a-input placeholder="请输入保存目录(不勾选图片模型库生效)" v-model="queryParam.savePath"></a-input>
+              </a-form-item>
+            </a-col>
+          </template>
+          <a-col :xl="6" :lg="7" :md="8" :sm="24">
+            <span style="float: left;overflow: hidden;" class="table-page-search-submitButtons">
+              <a-button type="primary" @click="searchQuery" icon="search">查询</a-button>
+              <a-button type="primary" @click="searchReset" icon="reload" style="margin-left: 8px">重置</a-button>
+              <a @click="handleToggleSearch" style="margin-left: 8px">
+                {{ toggleSearchStatus ? '收起' : '展开' }}
+                <a-icon :type="toggleSearchStatus ? 'up' : 'down'"/>
+              </a>
+            </span>
+          </a-col>
         </a-row>
       </a-form>
     </div>
@@ -130,7 +157,7 @@
           {
             title:'视频类型',
             align:"center",
-            dataIndex: 'videoType'
+            dataIndex: 'videoType_dictText'
           },
           {
             title:'视频地址',
@@ -149,6 +176,11 @@
             dataIndex: 'picNumber'
           },
           {
+            title:'保存目录(不勾选图片模型库生效)',
+            align:"center",
+            dataIndex: 'savePath'
+          },
+          {
             title:'运行状态',
             align:"center",
             dataIndex: 'runState'
@@ -163,6 +195,12 @@
             align:"center",
             dataIndex: 'isCover',
             customRender: (text) => (text ? filterMultiDictText(this.dictOptions['isCover'], text) : ''),
+          },
+          {
+            title:'是否放入图片模型库',
+            align:"center",
+            dataIndex: 'picModelInster',
+            customRender: (text) => (text ? filterMultiDictText(this.dictOptions['picModelInster'], text) : ''),
           },
           {
             title: '操作',
@@ -187,6 +225,7 @@
     },
     created() {
       this.$set(this.dictOptions, 'isCover', [{text:'是',value:'Y'},{text:'否',value:'N'}])
+      this.$set(this.dictOptions, 'picModelInster', [{text:'是',value:'Y'},{text:'否',value:'N'}])
     this.getSuperFieldList();
     },
     computed: {
@@ -204,9 +243,11 @@
         fieldList.push({type:'string',value:'videoUrl',text:'视频地址',dictCode:''})
         fieldList.push({type:'int',value:'interFrameInterval',text:'间隔帧',dictCode:''})
         fieldList.push({type:'int',value:'picNumber',text:'采集数量',dictCode:''})
+        fieldList.push({type:'string',value:'savePath',text:'保存目录(不勾选图片模型库生效)',dictCode:''})
         fieldList.push({type:'string',value:'runState',text:'运行状态',dictCode:'is_open'})
         fieldList.push({type:'string',value:'remake',text:'备注',dictCode:''})
         fieldList.push({type:'switch',value:'isCover',text:'是否覆盖'})
+        fieldList.push({type:'switch',value:'picModelInster',text:'是否放入图片模型库'})
         this.superFieldList = fieldList
       }
     }

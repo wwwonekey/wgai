@@ -61,7 +61,8 @@ public class TabAiClickpicSetting implements Serializable {
     @ApiModelProperty(value = "所属模型")
     private java.lang.String modelId;
 	/**视频类型*/
-	@Excel(name = "视频类型", width = 15)
+	@Excel(name = "视频类型", width = 15, dicCode = "video_type")
+	@Dict(dicCode = "video_type")
     @ApiModelProperty(value = "视频类型")
     private java.lang.String videoType;
 	/**视频地址*/
@@ -76,6 +77,10 @@ public class TabAiClickpicSetting implements Serializable {
 	@Excel(name = "采集数量", width = 15)
     @ApiModelProperty(value = "采集数量")
     private java.lang.Integer picNumber;
+	/**保存目录(不勾选图片模型库生效)*/
+	@Excel(name = "保存目录(不勾选图片模型库生效)", width = 15)
+    @ApiModelProperty(value = "保存目录(不勾选图片模型库生效)")
+    private java.lang.String savePath;
 	/**运行状态*/
 	@Excel(name = "运行状态", width = 15)
     @ApiModelProperty(value = "运行状态")
@@ -88,4 +93,8 @@ public class TabAiClickpicSetting implements Serializable {
 	@Excel(name = "是否覆盖", width = 15)
     @ApiModelProperty(value = "是否覆盖")
     private java.lang.String isCover;
+	/**是否放入图片模型库*/
+	@Excel(name = "是否放入图片模型库", width = 15)
+    @ApiModelProperty(value = "是否放入图片模型库")
+    private java.lang.String picModelInster;
 }

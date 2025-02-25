@@ -4,9 +4,9 @@ spring:
   profiles:
     active: '@profile.name@'
 audio:
-    path: 'D:\JAVAAI\audio\sherpa-onnx-conformer-zh-stateless2-2023-05-23\'
-    dll: 'D:\JAVAHOME\JAVA_AI\sherpa-onnx-jni.dll'
-opencv: 'D:\opencv\build\java\x64\opencv_java481.dll'
+    path: 'F:\JAVAAI\audio\sherpa-onnx-conformer-zh-stateless2-2023-05-23\'
+    dll: 'E:\JAVAHOME\JAVA_AI\sherpa-onnx-jni.dll'
+opencv: 'F:\JAVAAI\opencv481\opencv\build\java\x64\opencv_java481.dll'
 ##'/home/opencv481/opencv-4.8.1/build/lib/libopencv_java481.so'
   ## 'F:\JAVAAI\opencv481\opencv\build\java\x64\opencv_java481.dll'
 

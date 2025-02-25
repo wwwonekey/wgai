@@ -10,7 +10,7 @@
           </a-col>
           <a-col :span="24">
             <a-form-model-item label="视频类型" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="videoType">
-              <a-input v-model="model.videoType" placeholder="请输入视频类型"  ></a-input>
+              <j-dict-select-tag type="list" v-model="model.videoType" dictCode="video_type" placeholder="请选择视频类型" />
             </a-form-model-item>
           </a-col>
           <a-col :span="24">
@@ -29,8 +29,8 @@
             </a-form-model-item>
           </a-col>
           <a-col :span="24">
-            <a-form-model-item label="运行状态" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="runState">
-              <a-input v-model="model.runState" placeholder="请输入运行状态"  ></a-input>
+            <a-form-model-item label="保存目录(不勾选图片模型库生效)" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="savePath">
+              <a-input v-model="model.savePath" placeholder="请输入保存目录(不勾选图片模型库生效)"  ></a-input>
             </a-form-model-item>
           </a-col>
           <a-col :span="24">
@@ -41,6 +41,11 @@
           <a-col :span="24">
             <a-form-model-item label="是否覆盖" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="isCover">
               <j-switch v-model="model.isCover"  ></j-switch>
+            </a-form-model-item>
+          </a-col>
+          <a-col :span="24">
+            <a-form-model-item label="是否放入图片模型库" :labelCol="labelCol" :wrapperCol="wrapperCol" prop="picModelInster">
+              <j-switch v-model="model.picModelInster"  ></j-switch>
             </a-form-model-item>
           </a-col>
         </a-row>
@@ -80,6 +85,21 @@
         },
         confirmLoading: false,
         validatorRules: {
+           modelId: [
+              { required: true, message: '请输入所属模型!'},
+           ],
+           videoType: [
+              { required: true, message: '请输入视频类型!'},
+           ],
+           interFrameInterval: [
+              { required: true, message: '请输入间隔帧!'},
+           ],
+           picNumber: [
+              { required: true, message: '请输入采集数量!'},
+           ],
+           savePath: [
+              { required: true, message: '请输入保存目录(不勾选图片模型库生效)!'},
+           ],
         },
         url: {
           add: "/video/tabAiClickpicSetting/add",
