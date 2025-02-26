@@ -1,5 +1,6 @@
 package org.jeecg.modules.demo.video.service;
 
+import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.demo.video.entity.TabAiClickpicSetting;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -10,5 +11,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @Version: V1.0
  */
 public interface ITabAiClickpicSettingService extends IService<TabAiClickpicSetting> {
+
+
+
+
+    Result<?> startUpPic(TabAiClickpicSetting tabAiClickpicSetting);
 
 }

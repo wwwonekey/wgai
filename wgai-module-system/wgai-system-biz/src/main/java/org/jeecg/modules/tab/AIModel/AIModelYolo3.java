@@ -1828,7 +1828,7 @@ public class AIModelYolo3 {
      * @return
      */
     public String SavePicInLocalhost(String imageUrl,String path){
-
+        System.load("F:\\JAVAAI\\opencv481\\opencv\\build\\java\\x64\\opencv_java481.dll");
         try {
             String uuid =System.currentTimeMillis()+"";
             File dir = new File(path+File.separator);

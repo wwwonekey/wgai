@@ -141,7 +141,7 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
         }
 
         for (String pathStr : path) {
-            String newFileName=sendPicNameNo( flag,pathStr, folder);
+            String newFileName=sendPicNameNo( folder);
             File newFile = new File(newDir, newFileName); //移动到新目录
             File oldFile = new File(upLoadPath+File.separator+pathStr); //移动到新目录
             if (oldFile.renameTo(newFile)) {
@@ -178,11 +178,11 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
 
     /***
      * 文件生成序号
-     * @param flag
-     * @param picName
+     * @param
+     * @param
      * @return
      */
-    public static String sendPicNameNo(boolean flag, String picName, String folder){
+    public static String sendPicNameNo(String folder){
 
 
        int number=getFileNum(folder);

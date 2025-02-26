@@ -86,6 +86,16 @@ public class TabAiClickpicSettingController extends JeecgController<TabAiClickpi
 		tabAiClickpicSettingService.save(tabAiClickpicSetting);
 		return Result.OK("添加成功！");
 	}
+
+
+	 @AutoLog(value = "采集图片配置-开始采集")
+	 @ApiOperation(value="采集图片配置-开始采集", notes="采集图片配置-开始采集")
+	 //@RequiresPermissions("org.jeecg.modules.demo:tab_ai_clickpic_setting:add")
+	 @PostMapping(value = "/starupPic")
+	 public Result<?> starupPic(@RequestBody TabAiClickpicSetting tabAiClickpicSetting) {
+
+		 return  tabAiClickpicSettingService.startUpPic(tabAiClickpicSetting);
+	 }
 	
 	/**
 	 *  编辑
