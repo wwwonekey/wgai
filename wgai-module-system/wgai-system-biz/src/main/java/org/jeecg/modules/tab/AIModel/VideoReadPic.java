@@ -21,6 +21,7 @@ import org.opencv.imgproc.Imgproc;
 import org.opencv.utils.Converters;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
+import org.springframework.data.redis.core.RedisTemplate;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,10 +44,11 @@ public class VideoReadPic implements Runnable{
     static String uploadpath="D:\\opt\\upFiles";
     static PushInfo pushInfo;
     static Long LastTime= 0L;
-
-    public VideoReadPic(PushInfo pushInfo,String uploadpath){
+    RedisTemplate redisTemplate;
+    public VideoReadPic(PushInfo pushInfo,String uploadpath,RedisTemplate redisTemplate){
         this.pushInfo=pushInfo;
-       // this.uploadpath=uploadpath;
+        this.redisTemplate=redisTemplate;
+        this.uploadpath=uploadpath;
     }
 
     @Override
@@ -95,21 +97,33 @@ public class VideoReadPic implements Runnable{
                 Frame frames;
                 while ((frames = grabber.grab()) != null) {
                     // 将Frame转换为OpenCV的Mat对象
-
-                    if(frames.image!=null){
-
-                        Mat opencvMat=bufferedImageToMat(converter.getBufferedImage(frames));
-                        log.info("抓取到一帧");
-                        for (int i = 0; i < nets.size(); i++) {
-                            if(nets.get(i).getModelType().equals("1")){
-                                detectObjects(opencvMat, nets.get(i).getNet(), claseeNames.get(i),tabAiModels.get(i));
-                            }else{
-                                detectObjectsV5(opencvMat, nets.get(i).getNet(), claseeNames.get(i),tabAiModels.get(i));
-                            }
-                        }
-                        opencvMat.release();
+                    boolean flag= (boolean) redisTemplate.opsForValue().get("isRunPush");
+                    if(!flag){
+                        log.info("结束推送");
+                        break;
                     }
+                    try {
 
+
+                        if(frames.image!=null){
+
+                            Mat opencvMat=bufferedImageToMat(converter.getBufferedImage(frames));
+                            log.info("抓取到一帧");
+                            for (int i = 0; i < nets.size(); i++) {
+                                if(nets.get(i).getModelType().equals("1")){
+                                    detectObjects(opencvMat, nets.get(i).getNet(), claseeNames.get(i),tabAiModels.get(i));
+                                }else{
+                                    detectObjectsV5(opencvMat, nets.get(i).getNet(), claseeNames.get(i),tabAiModels.get(i));
+                                }
+                            }
+                            opencvMat.release();
+                        }
+                    }catch (Exception ex){
+                        ex.printStackTrace();
+
+                    }finally {
+                        continue;
+                    }
                 }
 
                 grabber.stop();
@@ -357,6 +371,10 @@ public class VideoReadPic implements Runnable{
             }
         }
 
+        if(confidences.size()<=0){
+            log.info("当前未检测到内容");
+            return  false ;
+        }
         // 执行非最大抑制，消除重复的边界框
         MatOfRect2d boxes_mat = new MatOfRect2d();
         boxes_mat.fromList(boxes2d);

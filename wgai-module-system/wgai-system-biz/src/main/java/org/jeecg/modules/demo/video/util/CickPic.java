@@ -1,6 +1,7 @@
 package org.jeecg.modules.demo.video.util;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import javafx.scene.control.Tab;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
@@ -11,6 +12,7 @@ import org.jeecg.modules.demo.easy.mapper.TabEasyPicMapper;
 import org.jeecg.modules.demo.train.entity.TabModelTry;
 import org.jeecg.modules.demo.train.entity.TabModelTryOrg;
 import org.jeecg.modules.demo.train.mapper.TabModelTryOrgMapper;
+import org.jeecg.modules.demo.train.service.ITabModelTryService;
 import org.jeecg.modules.demo.video.entity.TabAiClickpicSetting;
 import org.jeecg.modules.demo.video.mapper.TabAiClickpicSettingMapper;
 import org.opencv.core.Mat;
@@ -41,13 +43,15 @@ public class CickPic implements Runnable{
     TabEasyPicMapper tabEasyPicMapper;
     TabModelTryOrgMapper tabModelTryOrgMapper;
     TabAiClickpicSettingMapper tabAiClickpicSettingMapper;
-    public CickPic(TabAiClickpicSetting tabAiClickpicSetting,TabModelTry tabModelTry,String uploadPath, TabEasyPicMapper tabEasyPicMapper,   TabModelTryOrgMapper tabModelTryOrgMapper, TabAiClickpicSettingMapper tabAiClickpicSettingMapper){
+    ITabModelTryService iTabModelTryService;
+    public CickPic(TabAiClickpicSetting tabAiClickpicSetting,TabModelTry tabModelTry,String uploadPath, TabEasyPicMapper tabEasyPicMapper,   TabModelTryOrgMapper tabModelTryOrgMapper, TabAiClickpicSettingMapper tabAiClickpicSettingMapper,  ITabModelTryService iTabModelTryService){
         this.tabAiClickpicSetting=tabAiClickpicSetting;
         this.tabModelTry=tabModelTry;
         this.uploadPath=uploadPath;
         this.tabEasyPicMapper=tabEasyPicMapper;
         this.tabModelTryOrgMapper=tabModelTryOrgMapper;
         this.tabAiClickpicSettingMapper=tabAiClickpicSettingMapper;
+        this.iTabModelTryService=iTabModelTryService;
     }
 
 
@@ -71,9 +75,14 @@ public class CickPic implements Runnable{
             deleteAllFilesInFolder(file);
         }
 
+        String videoUrl=tabAiClickpicSetting.getVideoUrl();
+        if(tabAiClickpicSetting.getVideoType().equals("1")){ //视频文件
+            videoUrl=uploadPath+File.separator+videoUrl;
+        }
 
 
-        List<String> listurl=sendSavePic( tabAiClickpicSetting.getVideoUrl(), saveUrl,tabAiClickpicSetting.getInterFrameInterval());
+        List<String> listurl=sendSavePic( videoUrl, saveUrl,tabAiClickpicSetting.getInterFrameInterval(),tabAiClickpicSetting.getPicNumber());
+
         if(StringUtils.isNotEmpty(tabAiClickpicSetting.getPicModelInster())&&tabAiClickpicSetting.getPicModelInster().equals("Y")){
             if(StringUtils.isNotEmpty(tabAiClickpicSetting.getIsCover())&&tabAiClickpicSetting.getIsCover().equals("Y")) {
 
@@ -96,14 +105,40 @@ public class CickPic implements Runnable{
                 tabEasyPicMapper.insert(pic);
                 tabModelTryOrgMapper.insert(modelTryOrg);
             }
+            //计算图片数量和标记数量
+            int numberPic=0;
+            int markNumber=0;
+            double picMb=0;
+
+            List<TabEasyPic> tabEasyPicList=tabEasyPicMapper.selectList(new LambdaQueryWrapper<TabEasyPic>().eq(TabEasyPic::getModelId,tabAiClickpicSetting.getModelId()));
+            numberPic=tabEasyPicList.size();
+            for (TabEasyPic tab:tabEasyPicList) {
+                if (tab.getMarkType().equals("Y")) {//标注了
+                    markNumber++;
+                }
+
+                File fileimg = new File(uploadPath + File.separator + tab.getPicUrl());
+                if (fileimg.exists() && fileimg.isFile()) {
+                    long fileSizeInBytes = fileimg.length(); // 获取文件大小（单位：字节）
+                    picMb += fileSizeInBytes / (1024.0 * 1024.0); // 转换为MB
+                }
+            }
+            TabModelTry modelTry=iTabModelTryService.getById(tabAiClickpicSetting.getModelId());
+            modelTry.setPicNumber(numberPic+"");
+            modelTry.setMakeNumber(markNumber+"");
+            modelTry.setFileSize(picMb);
+            modelTry.setRunState(0);
+            iTabModelTryService.updateById(modelTry);
+
+
         }
         tabAiClickpicSetting.setRunState("N");
         tabAiClickpicSettingMapper.updateById(tabAiClickpicSetting);
     }
 
-    public static List<String> sendSavePic(String videoUrl,String saveUrl,int jgz){
+    public static List<String> sendSavePic(String videoUrl,String saveUrl,int jgz,int endPic){
         List<String> listurl=new ArrayList<>();
-        log.info("开始读取数据");
+        log.info("开始读取数据{}",videoUrl);
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(videoUrl);
         try {
 //                grabber.setOption("rtsp_transport", "tcp");  // 强制使用 TCP
@@ -133,7 +168,7 @@ public class CickPic implements Runnable{
                         log.info("间隔帧：{}",jiangezhen);
                         continue;
                     }
-                    if(picNumber>=10){
+                    if(picNumber>=endPic){
                         log.info("读取完成：{}",picNumber);
                         break;
                     }

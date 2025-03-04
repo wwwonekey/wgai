@@ -166,7 +166,9 @@ public class AIModelYolo3 {
 
         log.info("weight地址{}",uploadpath+ File.separator +weight);
         Net net = Dnn.readNetFromONNX(uploadpath+ File.separator +weight);
-        net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
+      //  net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
+        net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+        net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
         // 读取输入图像
         log.info("图片地址{}",uploadpath+ File.separator +picUrl);
         Mat image = Imgcodecs.imread(uploadpath+ File.separator +picUrl);
@@ -1155,8 +1157,10 @@ public class AIModelYolo3 {
         log.info("cfg地址{}",uploadpath+ File.separator +cfg);
         log.info("weight地址{}",uploadpath+ File.separator +weight);
         Net net = Dnn.readNetFromDarknet(uploadpath+ File.separator +cfg, uploadpath+ File.separator +weight);
-        net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
-        net.setPreferableBackend(Dnn.DNN_TARGET_CUDA);
+//        net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
+//        net.setPreferableBackend(Dnn.DNN_TARGET_CUDA);
+        net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+        net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
         // 读取输入图像
         log.info("图片地址{}",uploadpath+ File.separator +picUrl);
         Mat image = Imgcodecs.imread(uploadpath+ File.separator +picUrl);
@@ -1729,7 +1733,7 @@ public class AIModelYolo3 {
         List<PushInfo> pushA= (List<PushInfo> ) redisTemplate.opsForValue().get("sendPush");
         ExecutorService executor = Executors.newCachedThreadPool();
         for (PushInfo pushInfo:pushA) {
-            executor.submit(new VideoReadPic(pushInfo,uploadPath));
+            executor.submit(new VideoReadPic(pushInfo,uploadPath, redisTemplate));
         }
 
 

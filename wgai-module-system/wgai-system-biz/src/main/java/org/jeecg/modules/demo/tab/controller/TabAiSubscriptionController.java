@@ -81,6 +81,7 @@ public class TabAiSubscriptionController extends JeecgController<TabAiSubscripti
 		 tabAiBaseService.SendRedisBase();
 
 		 AIModelYolo3  modelYolo3=new AIModelYolo3();
+		  redisTemplate.opsForValue().set("isRunPush",true);
 		 modelYolo3.SendPicThread(redisTemplate,uplpadPath);
 		return object1;
 	}
@@ -195,6 +196,17 @@ public class TabAiSubscriptionController extends JeecgController<TabAiSubscripti
 
 		tabAiSubscriptionService.updateById(tabAiSubscription);
 		tabAiSubscriptionService.insertRedisSubscription();
+		if(tabAiSubscription.getRunState()==1){
+			log.info("输出结果");
+			List<PushInfo> object1= (List<PushInfo> ) redisTemplate.opsForValue().get("sendPush");
+			//中文写入缓存内容
+			tabAiBaseService.SendRedisBase();
+			redisTemplate.opsForValue().set("isRunPush",true);
+			AIModelYolo3  modelYolo3=new AIModelYolo3();
+			modelYolo3.SendPicThread(redisTemplate,uplpadPath);
+		}else{
+			redisTemplate.opsForValue().set("isRunPush",false);
+		}
 		return Result.OK("执行成功!");
 	}
 

@@ -44,7 +44,7 @@ public class TabAiClickpicSettingServiceImpl extends ServiceImpl<TabAiClickpicSe
         tabAiClickpicSetting.setRunState("Y");
         this.updateById(tabAiClickpicSetting);
         ExecutorService executor = Executors.newCachedThreadPool();
-        executor.submit(new CickPic(tabAiClickpicSetting,tabModelTry,uploadPath,tabEasyPicMapper,tabModelTryOrgMapper,tabAiClickpicSettingMapper));
+        executor.submit(new CickPic(tabAiClickpicSetting,tabModelTry,uploadPath,tabEasyPicMapper,tabModelTryOrgMapper,tabAiClickpicSettingMapper,iTabModelTryService));
 
         return Result.ok("开始采集");
     }

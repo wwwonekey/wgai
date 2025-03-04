@@ -27,6 +27,21 @@
 
 
 # 直接上手
+### 后端运行
+   #### spring boot 一键启动
+![audio1](wg/javastart.jpg)
+## 如遇问题: 缺少jar包可在代码搜索获得,如实在找不到移步知识星球获取jar插件
+### 前端运行
+   #### VUE2 常用启动
+![audio1](wg/vuestar.jpg)
+## 建议有前后端基础知识再启动，目前运行&安装&教学文档只有加入知识星球获取  不加知识星球有问题请去提issues或自行解决
+
+
+# 操作手册
+## 如何一键训练？如何推送给第三方平台？请看VCR
+
+> [<span style="color: red;">一键训练视频地址https://www.bilibili.com/video/BV13C9BYiEFS?t=38.4</span>](https://www.bilibili.com/video/BV13C9BYiEFS?t=38.4)
+
 
 ## 下载即可使用 
 > springboot+vue+mysql 支持国产化数据库 配置内容不再详细赘述 如果java 薄弱建议先学习java 再来使用  前端在VUE分支！！！

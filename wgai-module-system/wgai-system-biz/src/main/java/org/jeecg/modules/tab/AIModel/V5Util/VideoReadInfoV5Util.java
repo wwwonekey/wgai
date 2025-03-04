@@ -61,10 +61,10 @@ public class VideoReadInfoV5Util implements Runnable{
             throw new RuntimeException(e);
         }
         Net net = Dnn.readNetFromONNX(weightUrl);;
-//        net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-//        net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
-            net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
-            net.setPreferableTarget(Dnn.DNN_TARGET_CUDA);
+        net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+        net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
+//            net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
+//            net.setPreferableTarget(Dnn.DNN_TARGET_CUDA);
 
             while (true){
             long startTime=System.currentTimeMillis();
