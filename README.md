@@ -165,6 +165,18 @@
 ### 技术问题社群内都会回答&&以及各种安装环境配置
 ![zfb](wg/shequn.jpg)
 
+## 在线捐赠
+### 如果此项目对你有用捐赠一下长期发展维护（捐赠>100前100名赠送AI秘籍）
+![zfb](wg/wechat.jpg)![zfb](wg/zfb.jpg)
+### 捐赠名单按捐赠顺序前后鸣谢
+@喜
+
+## 广告位合作
+
+
+### 虚拟以待~
+
+
 ## 🛡️ License
 [`Apache License, Version 2.0`](https://www.apache.org/licenses/LICENSE-2.0.html)
 
