@@ -39,6 +39,8 @@
 >####  ❤ **更新展示**
 >* <img src="wg/szr.png" height="200px">
 >* 图片变成动态数字人视频/设置自己自己的文本与音色
+>* > [<span style="color: red;">数字人结果视频</span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
+   
 >* <video src="https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4" controls="controls" width="500" height="300">您的浏览器不支持播放该视频！</video>
 >***
 
