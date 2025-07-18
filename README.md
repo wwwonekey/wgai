@@ -92,21 +92,19 @@
 >
 
 ## 加微信技术交流群
-![加交流群](wg/chatpic.jpg)
-## 有问题如何提问？
-### 有问题的话可以在知识星球提问 不加知识星球有问题请去提issues
-### 后续更会持续优化视频、图片识别内容
-### 技术问题社群内都会回答&&以及各种安装环境配置
-![zfb](wg/shequn.jpg)
+
+<img src="wg/chatpic.jpg" width="300px"  height="300px">
+<img src="wg/xingqiu.png" width="500px"  height="280px">
 
 ## 在线捐赠
 ### 如果此项目对你有用捐赠一下长期发展维护（捐赠>100前100名赠送AI秘籍）
-![zfb](wg/wechat.jpg)![zfb](wg/zfb.jpg)
+<img src="wg/wechat.jpg" width="300px"  height="300px"> 
+<img src="wg/zfb.jpg" width="300px"  height="300px">
+
 ### 捐赠名单按捐赠顺序前后鸣谢
 @喜
 
 ## 广告位合作
-
 
 ### 虚拟以待~
 
