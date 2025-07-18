@@ -91,14 +91,7 @@
 > 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
 >
 
-## 下载即可使用 
-> springboot+vue+mysql 支持国产化数据库 配置内容不再详细赘述 如果java 薄弱建议先学习java 再来使用  前端在VUE分支！！！
 
-> [<span style="color: red;">@gitee仓库地址 https://gitee.com/wggh_admin/wgai</span>](https://gitee.com/wggh_admin/wgai)
-
->[<span style="color: red;">@github仓库地址 https://github.com/YeyuchenBa/wgai</span>](https://github.com/YeyuchenBa/wgai)
-
->[<span style="color: red;">@gitcode仓库地址https://gitcode.com/dromara/wgai</span>](https://github.com/YeyuchenBa/wgai)
 
 # 新功能截图和功能介绍配置
 ### 在线训练&标注内容已经上线开源 支持windwos/linux 国产化服务器部署
