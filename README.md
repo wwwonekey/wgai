@@ -7,7 +7,7 @@
 <a href="README.md">中文文档</a> |<a href="README_EN.md">English Document</a> |
 </h4>
 
-**官网:  [<span style="color: red;">https://wgai.dromara.org/#/</span>](https://wgai.dromara.org/#/)**
+**官网:  [<span style="color: red;">http://120.48.51.195/#/</span>](http://120.48.51.195/#/)**
 
 [![Discord](https://img.shields.io/badge/Chat-Discord-7289DA?logo=discord)](https://discord.gg/Fb6M73htGr)
 [![Reddit](https://img.shields.io/badge/Reddit-Community-7289DA?logo=reddit)](https://www.reddit.com/r/hertzbeat/)
@@ -60,7 +60,7 @@
 >
 >  第三步打包前端（部署使用/开发不需要）：npm  run build
 >
->  <img src="vuestar.jpg" width="500px"  height="500px">
+>  <img src="wg/vuestar.jpg" width="500px"  height="500px">
 >
 ## 🔖 2. 启动后端
 > springboot单体直接运行 修改成你本地数据库连接和redis;
