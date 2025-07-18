@@ -18,38 +18,78 @@
 ## 🎡 <font color="green">介绍</font>
 > 开箱即用的JAVA AI平台融合了AI图像识别opencv、yolo、esayAI内核识别;AI智能客服、AI语言模型、可定制化自主离线化部署并自主化行业化使用
 避免占用内存、GPU消耗训练与识别分开使用;支持yolov3、yolov5、yolov8模型 支持exel、txt等文本语言模型；
-### 测试地址&账户
+
+## 🔆测试地址&账户
 > [<span style="color: red;"> http://1.95.152.91:9999/</span>](http://1.95.152.91:9999/)
+>
 > wgai wgai@2024
+>
+
+> ## 👀 目前已支持功能
+> ✅1.自主化离线化平台标注训练解放双手一件训练
 > 
-> <span style="color: red;">注：50元子买的服务器 跑跑就坠机建议不要暴力使用</span>
+> ✅2.支持多方推理，GPU/NPU/CPU消耗
+> 
+> ✅3.直通第三方业务系统结合不融入项目独立部署API接口即可使用 学习研究使用直接上手无需学习其他内容
+> 
+> ✅4.ORC识别/语音识别/数字人/等全方面AI解决方案再也不被第三方卡脖子完整解决方案！
+> 
+> ✅5.支持多种chatGPT无缝接入作为服务器使用
+> 
+> ✅6. 其他细节功能自行查询.........
+> 
+> ✅7. 持续更新............
 
 
+# ⭐️ 如何直接上手？
 
-# 直接上手
-### 后端运行
-   #### spring boot 一键启动
-![audio1](wg/javastart.jpg)
-## 如遇问题: 缺少jar包可在代码搜索获得,如实在找不到移步知识星球获取jar插件
-### 前端运行
-   #### VUE2 常用启动
-![audio1](wg/vuestar.jpg)
-## 建议有前后端基础知识再启动，目前运行&安装&教学文档只有加入知识星球获取  不加知识星球有问题请去提issues或自行解决
+## 💫 1.下载代码前后端
+>springboot+vue+mysql 支持国产化数据库 配置内容不再详细赘述 如果java薄弱建议先学习java和vue再来使用
+>
+>[<span style="color: red;">@gitee仓库地址 https://gitee.com/dromara/wgai</span>](https://gitee.com/dromara/wgai)
+>
+>[<span style="color: red;">@github仓库地址 https://github.com/dromara/wgai </span>](https://github.com/dromara/wgai)
+>
+>
+## 🏷️ 2. 启动前端
+>  启动过程遇到什么问题可自行百度解决
+>
+>  第一步下载：npm  run install
+>
+>  第二步启动：npm  run serve
+>
+>  第三步打包前端（部署使用/开发不需要）：npm  run build
+>
+>  <img src="vuestar.jpg" width="500px"  height="500px">
+>
+## 🔖 2. 启动后端
+> springboot单体直接运行 修改成你本地数据库连接和redis;
+>
+> 有很多朋友说找不到jar 有一些本地的jar我都放在目录下了需要手动导入到自己的maven库中（不会把jar导入到本地maven可以百度此处不做多余赘述）
+>
+>wgai-module-system\wgai-system-start\src\main\resources 目录下jar都需要
+>
+>wgai-module-system\wgai-system-biz\src\main\resources 目录下jar都需要
+>
+>  <img src="wg/javastart.jpg" width="1000px"  height="500px">
+>
+## ❓ 3.其他问题
+> 经过上述你还有问题那就isuess提问(随缘回复)/ <font color="green">或者加入知识星球（有问必答）</font>
+>
+> <img src="wg/xingqiu.png" width="500px"  height="280px">
 
->####  ❤ **更新展示**
->* <img src="wg/szr.png" height="200px">
->* 图片变成动态数字人视频/设置自己自己的文本与音色
->* > [<span style="color: red;">数字人结果视频</span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
-   
->* <video src="https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4" controls="controls" width="500" height="300">您的浏览器不支持播放该视频！</video>
->***
 
-
-# 操作手册
-## 如何一键训练？如何推送给第三方平台？请看VCR
-
-> [<span style="color: red;">一键训练视频地址https://www.bilibili.com/video/BV13C9BYiEFS?t=38.4</span>](https://www.bilibili.com/video/BV13C9BYiEFS?t=38.4)
-
+# ⁉️ 他能做什么？
+> 内置ORC识别,图片识别,视频识别,训练模型,训练自己的数字人以前别人卡我们脖子当老大，现在我要自己当老大别人请求我！
+>
+> 演示视频1：[<span style="color: red;">@如何标注训练自己的识别模型 https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4 </span>](https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4)
+>
+> 演示视频2：[<span style="color: red;">@训练完成如何使用 https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9</span>](https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+>
+> 演示视频3：[<span style="color: red;">数字人结果视频/图片变成动态数字人视频/设置自己自己的文本与音色 https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4 </span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
+>
+> 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
+>
 
 ## 下载即可使用 
 > springboot+vue+mysql 支持国产化数据库 配置内容不再详细赘述 如果java 薄弱建议先学习java 再来使用  前端在VUE分支！！！
