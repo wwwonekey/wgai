@@ -91,7 +91,7 @@
 > 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
 >
 
-## 加微信注明来意不然不通过（有问题isuess提问或者星球提问） 无商业版本
+## 加微信注明来意不然不通过（有问题isuess提问或者星球提问） 
 
 <img src="wg/chatpic.jpg" width="300px"  height="300px">
 <img src="wg/xingqiu.png" width="500px"  height="280px">
