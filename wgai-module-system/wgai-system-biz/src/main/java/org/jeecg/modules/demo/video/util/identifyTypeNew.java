@@ -2,7 +2,7 @@ package org.jeecg.modules.demo.video.util;
 
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.bytedeco.ffmpeg.global.avcodec;
 import org.bytedeco.javacv.*;
 import org.jeecg.common.util.RestUtil;
@@ -399,7 +399,7 @@ public class identifyTypeNew {
         Object beforTime = redisTemplate.opsForValue().get(netPush.getId());
         if (beforTime == null) {
             log.info("当前间隔消失可以推送了-间隔时间{}-{}", time, pushInfo.getId());
-            redisTemplate.opsForValue().set(netPush.getId(), System.currentTimeMillis(), time, TimeUnit.SECONDS);
+
         } else {
             return false;
         }
@@ -500,13 +500,22 @@ public class identifyTypeNew {
             double height = box.height * ((double) image.rows() / 640);
             double xzb = x * ((double) image.cols() / 640);
             double yzb = y * ((double) image.rows() / 640);
-
+            Scalar color=CommonColors(c);
             TabAiBase aiBase = VideoSendReadCfg.map.get(name);
             if (aiBase == null) {
                 aiBase = new TabAiBase();
                 aiBase.setChainName(name);
 
             }
+            else{
+                if(StringUtils.isNotEmpty(aiBase.getSpaceThree())&&aiBase.getSpaceThree().equals("N")){
+                    log.error("【当前不推送：{}】",name);
+                    continue;
+                }
+
+                color=getColor(aiBase.getRgbColor());
+            }
+            log.error("【当前推送：{}】",name);
 
             audioText += aiBase.getRemark() + aiBase.getSpaceOne();
             warnNumber += aiBase.getSpaceTwo() == null ? 1 : aiBase.getSpaceTwo();
@@ -516,11 +525,17 @@ public class identifyTypeNew {
             Imgproc.rectangle(image,
                     new Point(xzb, yzb),
                     new Point(xzb + width, yzb + height),
-                    CommonColors(c), 2);
+                    color, 2);
             //    log.info( "类别下标"+ab);
-            image = AIModelYolo3.addChineseText(image, aiBase.getChainName() + conf, new Point(xzb, yzb), CommonColors(c));
+            image = AIModelYolo3.addChineseText(image, aiBase.getChainName() + conf, new Point(xzb, yzb),color);
             //  Imgproc.putText(image, classNames.get(ab), new Point(box.x, box.y - 5), Core.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(c), 1);
             c++;
+        }
+        if(warnNumber>0){
+            redisTemplate.opsForValue().set(netPush.getId(), System.currentTimeMillis(), time, TimeUnit.SECONDS);
+        }else{
+            log.error("【当前不推送：{}】");
+            return false;
         }
 
         String savepath = uploadpath + File.separator + "push" + File.separator;
@@ -895,5 +910,16 @@ public class identifyTypeNew {
 
     }
 
+
+    public Scalar getColor(String color){
+        String[] parts = color.split(",");
+        int r = Integer.parseInt(parts[0].trim());
+        int g = Integer.parseInt(parts[1].trim());
+        int b = Integer.parseInt(parts[2].trim());
+
+// 注意：OpenCV 中是 BGR 顺序
+        Scalar scalar = new Scalar(b, g, r);
+        return  scalar;
+    }
 
 }
