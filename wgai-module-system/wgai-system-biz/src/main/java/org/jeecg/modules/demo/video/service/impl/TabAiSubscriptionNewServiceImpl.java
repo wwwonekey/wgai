@@ -14,6 +14,7 @@ import org.jeecg.modules.demo.video.service.ITabAiSubscriptionNewService;
 import org.jeecg.modules.demo.video.util.RedisCacheHolder;
 import org.jeecg.modules.demo.video.util.VideoReadPic;
 import org.jeecg.modules.demo.video.util.VideoReadPicNew;
+import org.jeecg.modules.demo.video.util.VideoReadPicNewWithDisruptor;
 import org.jeecg.modules.tab.AIModel.NetPush;
 import org.jeecg.modules.tab.entity.TabAiModel;
 import org.jeecg.modules.tab.mapper.TabAiModelMapper;
@@ -145,8 +146,11 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                     //Executors.newCachedThreadPool(4);
 
             //判断取流方式
-            executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
+           // executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
           //  executor.submit(new VideoReadPic(tabAiSubscriptionNew,redisTemplate));
+
+
+            executor.submit(new VideoReadPicNewWithDisruptor(tabAiSubscriptionNew,redisTemplate));
         }catch (IOException ex  ){
             ex.printStackTrace();
             log.error("[当前错误读取文件错误]");
