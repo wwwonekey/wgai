@@ -122,17 +122,17 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/**/*.woff2", "anon");
         // update-begin--Author:sunjianlei Date:20190813 for：排除字体格式的后缀
 
-        filterChainDefinitionMap.put("/druid/**", "anon");
-        filterChainDefinitionMap.put("/swagger-ui.html", "anon");
-        filterChainDefinitionMap.put("/swagger**/**", "anon");
-        filterChainDefinitionMap.put("/webjars/**", "anon");
-        filterChainDefinitionMap.put("/v2/**", "anon");
+//        filterChainDefinitionMap.put("/druid/**", "anon");
+//        filterChainDefinitionMap.put("/swagger-ui.html", "anon");
+//        filterChainDefinitionMap.put("/swagger**/**", "anon");
+//        filterChainDefinitionMap.put("/webjars/**", "anon");
+//        filterChainDefinitionMap.put("/v2/**", "anon");
 
         filterChainDefinitionMap.put("/sys/annountCement/show/**", "anon");
         filterChainDefinitionMap.put("/tab/tabAiSubscription/**", "anon");
         filterChainDefinitionMap.put("/tab/tabAiBase/**", "anon");
         //积木报表排除
-        filterChainDefinitionMap.put("/jmreport/**", "anon");
+     //   filterChainDefinitionMap.put("/jmreport/**", "anon");
         filterChainDefinitionMap.put("/**/*.js.map", "anon");
         filterChainDefinitionMap.put("/**/*.css.map", "anon");
         
