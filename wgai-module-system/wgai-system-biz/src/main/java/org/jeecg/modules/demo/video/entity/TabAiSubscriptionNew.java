@@ -147,7 +147,15 @@ public class TabAiSubscriptionNew implements Serializable {
     @ApiModelProperty(value = "是否本地保存录像")
     private java.lang.Integer saveRecord;
 
+    @Dict(dicCode = "push_static")
+    @Excel(name = "是否保存本地报警", width = 15)
+    @ApiModelProperty(value = "是否保存本地报警")
+    private java.lang.Integer saveLocalhost;
 
+    @Dict(dicCode = "push_static")
+    @Excel(name = "是否开启区域识别", width = 15)
+    @ApiModelProperty(value = "是否开启区域识别")
+    private java.lang.Integer isBy;
 
     @TableField(exist = false)
     List<TabAiVideoSetting> listSetting;

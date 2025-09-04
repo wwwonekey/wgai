@@ -29,10 +29,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.jeecg.modules.demo.audio.util.audioSend.getToken;
 import static org.jeecg.modules.demo.audio.util.audioSend.postAudioText;
@@ -233,14 +239,19 @@ public class identifyTypeNew {
                     aiBase.setChainName(name);
 
                 }
-                log.info("当前类别{}验证内容：", name, netPush.getBeforText());
+                log.info("当前类别{}验证内容：{}", name, netPush.getBeforText());
                 if (aiBase.getChainName().equals(netPush.getBeforText())) {
+                    log.warn("验证通过{},{}：", name, netPush.getBeforText());
                     flag = true;
                     break;
                 }
             }
         } catch (Exception ex) {
             return false;
+        }finally {
+            if(flag==false){
+                setBeforeImg(image,"before");
+            }
         }
         return flag;
     }
@@ -403,7 +414,9 @@ public class identifyTypeNew {
              if(printAverageRGB(image)){
                 setErrorImg(image,"huidutu");
                 log.info("当前是灰度图片");
+                return false;
              };
+
         } else {
             return false;
         }
@@ -607,14 +620,80 @@ public class identifyTypeNew {
 
     public void setErrorImg(Mat image,String txt){
         String saveName="D://error";
-        log.info("错误存储地址{}", saveName);
-        File imageFile = new File(saveName);
-        if (!imageFile.exists()) {
-            imageFile.mkdirs();
+        try {
+            long count = Files.list(Paths.get(saveName)).filter(Files::isRegularFile).count();
+            if(count>10000){
+                log.info("错误文件大于5000不再存储 以免磁盘满");
+                //只删 2000 张最旧的
+                new Thread(() -> {
+                    try (Stream<Path> paths = Files.list(Paths.get(saveName))) {
+                        paths.filter(Files::isRegularFile)
+                                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                                .limit(5000)
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+                return;
+            }
+            log.info("错误存储地址{}", saveName);
+            File imageFile = new File(saveName);
+            if (!imageFile.exists()) {
+                imageFile.mkdirs();
+            }
+            Imgcodecs.imwrite(saveName+"/"+txt+System.currentTimeMillis()+".jpg", image);
+        }catch (Exception exception){
+            exception.printStackTrace();
         }
-        Imgcodecs.imwrite(saveName+"/"+txt+System.currentTimeMillis()+".jpg", image);
-
-
+    }
+    //不通过的图片
+    public void setBeforeImg(Mat image,String txt){
+        String saveName="D://error//before";
+        try {
+            long count = Files.list(Paths.get(saveName)).filter(Files::isRegularFile).count();
+            if(count>10000){
+                log.info("不通过前置图片文件大于10000不再存储 以免磁盘满");
+                //删除所有重新存储
+                new Thread(() -> {
+                    try (Stream<Path> paths = Files.list(Paths.get(saveName))) {
+                        paths.filter(Files::isRegularFile)
+                                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                                .limit(5000)
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+                return;
+            }
+            log.info("错误存储地址{}", saveName);
+            File imageFile = new File(saveName);
+            if (!imageFile.exists()) {
+                imageFile.mkdirs();
+            }
+            SimpleDateFormat simpleDateFormat=new SimpleDateFormat("yyyyMMddHHmmss");
+            Random random = new Random();
+            int number = 10000 + random.nextInt(90000); // 10000 ~ 99999
+            String c=simpleDateFormat.format(new Date())+number;
+            log.info("当前文件名称{}",c);
+            Imgcodecs.imwrite(saveName+"/"+txt+c+".jpg", image);
+        }catch (Exception exception){
+            exception.printStackTrace();
+            log.info("【存储错误】");
+        }
     }
 
     /***

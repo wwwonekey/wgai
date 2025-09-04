@@ -1,5 +1,6 @@
 package org.jeecg.modules.demo.video.service;
 
+import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.demo.video.entity.TabAiSubscriptionNew;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -15,4 +16,12 @@ public interface ITabAiSubscriptionNewService extends IService<TabAiSubscription
 
     public void startAi(TabAiSubscriptionNew tabAiSubscriptionNew) throws IOException;
     public void stopAi(TabAiSubscriptionNew tabAiSubscriptionNew);
+
+    public void setBox(TabAiSubscriptionNew tabAiSubscriptionNew);
+
+    /***
+     * 获取第一张图片
+     * @param id
+     */
+    public Result<String> getVideoPic(String id);
 }

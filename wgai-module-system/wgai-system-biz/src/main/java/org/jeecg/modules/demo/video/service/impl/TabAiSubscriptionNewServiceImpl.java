@@ -3,6 +3,11 @@ package org.jeecg.modules.demo.video.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.bytedeco.ffmpeg.global.avutil;
+import org.bytedeco.javacv.FFmpegFrameGrabber;
+import org.bytedeco.javacv.Frame;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.demo.tab.service.impl.TabAiBaseServiceImpl;
 import org.jeecg.modules.demo.video.entity.TabAiModelNew;
 import org.jeecg.modules.demo.video.entity.TabAiSubscriptionNew;
@@ -11,10 +16,7 @@ import org.jeecg.modules.demo.video.mapper.TabAiSubscriptionNewMapper;
 import org.jeecg.modules.demo.video.mapper.TabAiVideoSettingMapper;
 import org.jeecg.modules.demo.video.service.ITabAiSubscriptionNewService;
 
-import org.jeecg.modules.demo.video.util.RedisCacheHolder;
-import org.jeecg.modules.demo.video.util.VideoReadPic;
-import org.jeecg.modules.demo.video.util.VideoReadPicNew;
-import org.jeecg.modules.demo.video.util.VideoReadPicNewWithDisruptor;
+import org.jeecg.modules.demo.video.util.*;
 import org.jeecg.modules.tab.AIModel.NetPush;
 import org.jeecg.modules.tab.entity.TabAiModel;
 import org.jeecg.modules.tab.mapper.TabAiModelMapper;
@@ -27,6 +29,8 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -142,12 +146,12 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
             log.info("[当前开始执行推理]{}",tabAiSubscriptionNew.getName());
             //开始取流
-            ExecutorService executor = Executors.newFixedThreadPool(64);
+            ExecutorService executor = Executors.newFixedThreadPool(32);
                     //Executors.newCachedThreadPool(4);
 
             //判断取流方式
+            //executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
             executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
-          //  executor.submit(new VideoReadPic(tabAiSubscriptionNew,redisTemplate));
 
 
          //   executor.submit(new VideoReadPicNewWithDisruptor(tabAiSubscriptionNew,redisTemplate));
@@ -201,5 +205,110 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
         tabAiSubscriptionNew.setRunState(0);
         this.updateById(tabAiSubscriptionNew);
 
+    }
+
+    @Override
+    public void setBox(TabAiSubscriptionNew tabAiSubscriptionNew) {
+
+    }
+
+    @Override
+    public Result<String> getVideoPic(String  id) {
+
+        String outputPath = upLoadPath+ File.separator ;
+        String picName=id+"jpg";
+        try {
+            TabAiSubscriptionNew tabAiSubscriptionNew1=this.getById(id);
+            FFmpegFrameGrabber  grabber= createOptimizedGrabber(tabAiSubscriptionNew1);
+            Frame frame;
+            while (true){
+                frame = grabber.grabImage();
+                if(frame==null){
+                    continue;
+                }
+                if(frame.image==null){
+                    continue;
+                }
+                if(frame!=null){
+                    Java2DFrameConverter converter = new Java2DFrameConverter();
+                    BufferedImage bufferedImage = converter.convert(frame);
+                    // 保存为 jpg/png
+                    ImageIO.write(bufferedImage, "jpg", new File(outputPath+picName));
+                    break;
+                }
+            }
+            grabber.stop();
+            grabber.release();
+        }catch (Exception ex){
+            ex.printStackTrace();
+        }
+        return Result.OK(picName);
+    }
+
+
+
+    public FFmpegFrameGrabber createOptimizedGrabber(TabAiSubscriptionNew tabAiSubscriptionNew) throws Exception {
+
+        FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(tabAiSubscriptionNew.getBeginEventTypes());
+        // 最重要：完全静默所有FFmpeg日志输出
+        grabber.setOption("loglevel", "-8");  // 完全静默，比quiet更彻底
+
+        // GPU设置
+        if (tabAiSubscriptionNew.getEventTypes().equals("1")) {
+            grabber.setOption("hwaccel", "cuda");
+            grabber.setOption("hwaccel_device", "0");
+            grabber.setOption("hwaccel_output_format", "cuda");
+            log.info("[使用GPU_CUDA加速解码]");
+        }
+
+        // 基础连接设置
+        grabber.setOption("rtsp_transport", "tcp");
+        grabber.setOption("stimeout", "3000000");
+
+        // 解决swscaler警告的核心设置
+        // 方案1：强制转换为标准yuv420p格式，避免yuvj420p的警告
+        grabber.setPixelFormat(avutil.AV_PIX_FMT_BGR24);
+
+        // 或者方案2：如果需要保持原格式，则完全禁用swscaler警告
+        // grabber.setOption("sws_flags", "print_info+accurate_rnd+bitexact");
+        // grabber.setPixelFormat(avutil.AV_PIX_FMT_YUVJ420P);
+
+        // 颜色空间设置
+        grabber.setOption("colorspace", "bt709");
+        grabber.setOption("color_primaries", "bt709");
+        grabber.setOption("color_trc", "bt709");
+        grabber.setOption("color_range", "tv");  // 使用标准TV范围
+
+        // 性能优化设置
+        grabber.setOption("threads", "auto");
+        grabber.setOption("preset", "ultrafast");
+        grabber.setVideoOption("tune", "zerolatency");
+        grabber.setOption("max_delay", "500000");
+        grabber.setOption("buffer_size", "1048576");
+        //   grabber.setOption("fflags", "nobuffer");
+        //   grabber.setOption("flags", "low_delay");
+        grabber.setOption("framedrop", "1");
+        grabber.setOption("analyzeduration", "5000000");// 5秒分析时间
+        grabber.setOption("probesize", "2097152");// 2MB探测大小
+        grabber.setOption("rw_timeout", "10000000");   // 读写超时
+        // 音频禁用
+        grabber.setOption("an", "1");
+        // 确保从关键帧开始
+        grabber.setOption("flags", "+discardcorrupt+genpts");
+        grabber.setOption("flags2", "+fast");           // 快速解码
+        grabber.setOption("err_detect", "compliant");   // 严格错误检测
+        // 禁用B帧预测（减少依赖损坏）
+        grabber.setVideoOption("refs", "1");
+        grabber.setVideoOption("bf", "0");
+
+        // 关键帧解码
+        grabber.setOption("skip_frame", "nokey");
+
+        // 严格模式
+        grabber.setOption("strict", "experimental");
+
+        grabber.start();
+
+        return grabber;
     }
 }

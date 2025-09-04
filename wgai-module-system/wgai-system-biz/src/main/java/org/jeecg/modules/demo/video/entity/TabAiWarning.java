@@ -55,6 +55,11 @@ public class TabAiWarning implements Serializable {
 	/**所属部门*/
     @ApiModelProperty(value = "所属部门")
     private java.lang.String sysOrgCode;
+
+    @Excel(name = "预警摄像头", width = 15)
+    @ApiModelProperty(value = "预警摄像头")
+    private java.lang.String warningName;
+
 	/**预警类型*/
 	@Excel(name = "预警类型", width = 15)
     @ApiModelProperty(value = "预警类型")
@@ -64,9 +69,13 @@ public class TabAiWarning implements Serializable {
     @ApiModelProperty(value = "预警内容")
     private java.lang.String warningInfo;
 	/**预警视频地址*/
-	@Excel(name = "预警视频地址", width = 15)
-    @ApiModelProperty(value = "预警视频地址")
+	@Excel(name = "预警视频", width = 15)
+    @ApiModelProperty(value = "预警视频")
     private java.lang.String warningCome;
+
+    @Excel(name = "预警图片", width = 15)
+    @ApiModelProperty(value = "预警图片")
+    private java.lang.String warningPic;
 	/**预警时间*/
 	@Excel(name = "预警时间", width = 15, format = "yyyy-MM-dd")
 	@JsonFormat(timezone = "GMT+8",pattern = "yyyy-MM-dd")

@@ -1,14 +1,18 @@
 package org.jeecg.modules.demo.video.util.frame;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.javacv.Java2DFrameConverter;
 import org.opencv.core.*;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Scalar;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -35,7 +39,7 @@ public class FrameQualityFilter {
 
     public static void main(String[] args) {
         System.load("F:\\JAVAAI\\opencv481\\opencv\\build\\java\\x64\\opencv_java481.dll");
-
+         Java2DFrameConverter converter = new Java2DFrameConverter();
         String filePath="F:\\JAVAAI\\AIImg\\test";
         File directory = new File(filePath);
 
@@ -92,6 +96,7 @@ public class FrameQualityFilter {
                     log.info("当前是灰度图");
 
                 }
+              //  BufferedImage image = converter.convert(matInfo);
                 log.info("-----------------------------------------------");
                 a++;
             }
@@ -119,15 +124,86 @@ public class FrameQualityFilter {
         if( sumRGB>120 && sumRGB<140 && maxSub< 10) {
             //进一步确定是灰度图片吗
             double[] result = getBrightnessAndSaturation(image);
-            if(result[1]>30){
-                log.info("图像亮度(平均V):{}", result[0]);
-                log.info("图像饱和度(平均S): {}", result[1]);
+            log.info("图像亮度(平均V):{}", result[0]);
+            log.info("图像饱和度(平均S): {}", result[1]);
+       //     boolean isGray = isGrayByHistogram(image, 0.99);
+        //    System.out.println("图像是否为灰图: " + isGray);
+            if(result[1]>15){
                 log.info("二次判定不是灰色图片呢");
                 return  false;
             }
             return true;
         }
         return  false;
+    }
+
+    /**
+     * 检测马赛克/花屏
+     */
+    private boolean isMosaicFrame(BufferedImage image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+
+        // 检查颜色突变的频率
+        int abruptChanges = 0;
+        int totalChecks = 0;
+        int threshold = 100; // 颜色差异阈值
+
+        // 水平方向检查
+        for (int y = 0; y < height; y += 10) {
+            for (int x = 1; x < width; x += 10) {
+                Color prev = new Color(image.getRGB(x-1, y));
+                Color curr = new Color(image.getRGB(x, y));
+
+                int diff = Math.abs(prev.getRed() - curr.getRed()) +
+                        Math.abs(prev.getGreen() - curr.getGreen()) +
+                        Math.abs(prev.getBlue() - curr.getBlue());
+
+                if (diff > threshold) {
+                    abruptChanges++;
+                }
+                totalChecks++;
+            }
+        }
+
+        // 如果突变太频繁，可能是马赛克
+        double changeRate = (double)abruptChanges / totalChecks;
+        log.info("马赛克检测:{}",changeRate);
+        return changeRate > 0.6; // 超过60%的像素有突变
+    }
+
+
+    public static boolean isGrayByHistogram(Mat image, double threshold) {
+        if (image.empty() || image.channels() < 3) return true;
+
+        // 拆分 RGB 通道
+        List<Mat> bgrPlanes = new ArrayList<>();
+        Core.split(image, bgrPlanes); // B, G, R
+
+        // 设置直方图参数
+        MatOfInt histSize = new MatOfInt(256); // 256 bins
+        final MatOfFloat histRange = new MatOfFloat(0f, 256f);
+
+        boolean accumulate = false;
+        Mat histB = new Mat(), histG = new Mat(), histR = new Mat();
+
+        // 计算每个通道的直方图
+        Imgproc.calcHist(Arrays.asList(bgrPlanes.get(0)), new MatOfInt(0), new Mat(), histB, histSize, histRange, accumulate);
+        Imgproc.calcHist(Arrays.asList(bgrPlanes.get(1)), new MatOfInt(0), new Mat(), histG, histSize, histRange, accumulate);
+        Imgproc.calcHist(Arrays.asList(bgrPlanes.get(2)), new MatOfInt(0), new Mat(), histR, histSize, histRange, accumulate);
+
+        // 归一化
+        Core.normalize(histB, histB, 0, 1, Core.NORM_MINMAX);
+        Core.normalize(histG, histG, 0, 1, Core.NORM_MINMAX);
+        Core.normalize(histR, histR, 0, 1, Core.NORM_MINMAX);
+
+        // 比较直方图相似度（使用相关性）
+        double corrBG = Imgproc.compareHist(histB, histG, Imgproc.CV_COMP_CORREL);
+        double corrGR = Imgproc.compareHist(histG, histR, Imgproc.CV_COMP_CORREL);
+        double corrBR = Imgproc.compareHist(histB, histR, Imgproc.CV_COMP_CORREL);
+
+        // 若三个通道直方图高度相似，说明为灰图
+        return (corrBG > threshold && corrGR > threshold && corrBR > threshold);
     }
 
     public static double[] getBrightnessAndSaturation(Mat image) {

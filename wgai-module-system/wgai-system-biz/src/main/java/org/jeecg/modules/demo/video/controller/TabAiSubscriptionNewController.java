@@ -175,6 +175,26 @@ public class TabAiSubscriptionNewController extends JeecgController<TabAiSubscri
 		 tabAiSubscriptionNewService.stopAi(tabAiSubscriptionNew);
 		 return Result.OK("结束执行!");
 	 }
+
+	 @AutoLog(value = "设置边界")
+	 @ApiOperation(value="设置边界", notes="设置边界")
+	 //@RequiresPermissions("org.jeecg.modules.demo:tab_ai_subscription_new:edit")
+	 @RequestMapping(value = "/setBox", method = {RequestMethod.PUT,RequestMethod.POST})
+	 public Result<String> setBox(@RequestBody TabAiSubscriptionNew tabAiSubscriptionNew) {
+
+		 tabAiSubscriptionNewService.setBox(tabAiSubscriptionNew);
+		 return Result.OK("结束执行!");
+	 }
+
+	 @AutoLog(value = "获取视频原图")
+	 @ApiOperation(value="获取视频原图", notes="获取视频原图")
+	 //@RequiresPermissions("org.jeecg.modules.demo:tab_ai_subscription_new:edit")
+	 @RequestMapping(value = "/getVideoPic", method = {RequestMethod.GET,RequestMethod.POST})
+	 public Result<String> getVideoPic(@RequestParam(name="id",required=true) String id) {
+
+
+		 return tabAiSubscriptionNewService.getVideoPic(id);
+	 }
 	
 	/**
 	 *   通过id删除

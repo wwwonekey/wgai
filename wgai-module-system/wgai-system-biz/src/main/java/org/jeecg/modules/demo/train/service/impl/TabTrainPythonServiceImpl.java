@@ -172,7 +172,8 @@ public class TabTrainPythonServiceImpl extends ServiceImpl<TabTrainPythonMapper,
 
     public  void startTrain( TabTrainPython tabTrainPython7,String id){
          String  path=tabTrainPython7.getPyPath();//yolov5根目录
-
+         String  otherTrain=tabTrainPython7.getSpareOne();
+         String otherExport=tabTrainPython7.getSpareTwo();
         Thread trainingThread = new Thread(() -> {
             StringBuffer stringBuffer=new StringBuffer();
             String cmdTxt="未找到";
@@ -193,7 +194,7 @@ public class TabTrainPythonServiceImpl extends ServiceImpl<TabTrainPythonMapper,
 
                 log.info("训练完成，退出代码: " );
                try {
-                   ProcessBuilder processBuilder = new ProcessBuilder(new String[]{"/bin/bash", "-c","cd "+path+" && source myenv/bin/activate && python3 wgtrain.py"});
+                   ProcessBuilder processBuilder = new ProcessBuilder(new String[]{"/bin/bash", "-c","cd "+path+" && source myenv/bin/activate && python3 wgtrain.py "+otherTrain+"  "});
                    processBuilder.redirectErrorStream(true);  // 合并错误流到标准输出流
 
                    Process process = processBuilder.start();
@@ -232,7 +233,16 @@ public class TabTrainPythonServiceImpl extends ServiceImpl<TabTrainPythonMapper,
                log.info("【不管结果如何都要去保存日志并修正训练标记】");
                if(StringUtils.isNotEmpty(cmdPath)){  //转换pt为onnx文件
                    try {
-                       ProcessBuilder processBuilder = new ProcessBuilder(new String[]{"/bin/bash", "-c","cd "+path+" && source myenv/bin/activate &&  python export.py --weights "+cmdPath+"/weights/best.pt --img 640 --batch 1 --device 0 --include onnx --simplify --opset 11"});
+                       //python export.py \
+                       //    --weights /weights/best.pt \
+                       //    --img 640 \
+                       //    --batch 1 \
+                       //    --device 0 \
+                       //    --include onnx \
+                       //    --dynamic \
+                       //    --simplify \
+                       //    --opset 11
+                       ProcessBuilder processBuilder = new ProcessBuilder(new String[]{"/bin/bash", "-c","cd "+path+" && source myenv/bin/activate &&  python export.py --weights "+cmdPath+"/weights/best.pt --img 640 --batch 1 --device 0 --include onnx --simplify --opset 11 "+otherExport+""});
                        processBuilder.redirectErrorStream(true);  // 合并错误流到标准输出流
 
                        Process process = processBuilder.start();

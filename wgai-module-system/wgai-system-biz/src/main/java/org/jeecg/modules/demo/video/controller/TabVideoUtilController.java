@@ -105,6 +105,45 @@ public class TabVideoUtilController extends JeecgController<TabVideoUtil, ITabVi
 		return Result.OK("编辑成功!");
 	}
 
+	 @AutoLog(value = "获取视频原图")
+	 @ApiOperation(value="获取视频原图", notes="获取视频原图")
+	 //@RequiresPermissions("org.jeecg.modules.demo:tab_ai_subscription_new:edit")
+	 @RequestMapping(value = "/getVideoPic", method = {RequestMethod.GET,RequestMethod.POST})
+	 public Result<TabVideoUtil> getVideoPic(@RequestParam(name="id",required=true) String id) {
+		 QueryWrapper<TabVideoUtil> queryWrapper=new QueryWrapper<>();
+		 queryWrapper.eq("video_id",id);
+		 TabVideoUtil tabVideoUtil1= tabVideoUtilService.getOne(queryWrapper);
+		 if(tabVideoUtil1!=null){
+			 return Result.ok(tabVideoUtil1);
+		 }
+		 return Result.error("未找到");
+
+	 }
+	 /**
+	  *  第一次新增后续修改
+	  *
+	  * @param tabVideoUtil
+	  * @return
+	  */
+	 @AutoLog(value = "识别区域配置")
+	 @ApiOperation(value="区域入侵配置-编辑", notes="区域入侵配置-编辑")
+	 //@RequiresPermissions("org.jeecg.modules.demo:tab_video_util:edit")
+	 @RequestMapping(value = "/saveBox", method = {RequestMethod.PUT,RequestMethod.POST})
+	 public Result<String> saveBox(@RequestBody TabVideoUtil tabVideoUtil) {
+
+		 String videoId=tabVideoUtil.getVideoId();
+		 QueryWrapper<TabVideoUtil> queryWrapper=new QueryWrapper<>();
+		 queryWrapper.eq("video_id",videoId);
+		 TabVideoUtil tabVideoUtil1= tabVideoUtilService.getOne(queryWrapper);
+		 if(tabVideoUtil1==null){
+			 tabVideoUtilService.save(tabVideoUtil);
+		 }else{
+			 tabVideoUtil.setId(tabVideoUtil1.getId());
+			 tabVideoUtilService.updateById(tabVideoUtil);
+		 }
+		 return Result.OK("编辑成功!");
+	 }
+
 	 @Value(value = "${jeecg.path.upload}")
 	 private String uploadpath;
 	 /**
@@ -135,6 +174,7 @@ public class TabVideoUtilController extends JeecgController<TabVideoUtil, ITabVi
 		 }
 		 return Result.OK("开启成功!");
 	 }
+
 
 
 	 /**
