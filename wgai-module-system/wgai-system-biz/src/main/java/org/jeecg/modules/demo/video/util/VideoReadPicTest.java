@@ -64,7 +64,7 @@ public class VideoReadPicTest implements Runnable {
     // 线程安全的获取转换器
     private static Java2DFrameConverter getConverter() {
         if (SHARED_CONVERTER == null) {
-            synchronized (VideoReadPicNew.class) {
+            synchronized (VideoReadPicTest.class) {
                 if (SHARED_CONVERTER == null) {
                     SHARED_CONVERTER = new Java2DFrameConverter();
                 }

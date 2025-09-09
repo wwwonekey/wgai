@@ -478,6 +478,7 @@ public class identifyTypeNew {
         boolean flag;
         if (confidences.size() <= 0||confidences.size()>200) {
             log.warn(pushInfo.getName() + ":当前未检测到内容：{}-{}",netPush.getTabAiModel().getAiName(),confidences.size());
+            //setBeforeImg(image,"end");
             return false;
         }
         // 执行非最大抑制，消除重复的边界框
@@ -528,7 +529,7 @@ public class identifyTypeNew {
             }
             else{
                 if(StringUtils.isNotEmpty(aiBase.getSpaceThree())&&aiBase.getSpaceThree().equals("N")){
-                    log.error("【当前不推送：{}】",name);
+                    log.warn("【当前不推送：{}】",name);
                     continue;
                 }
 
@@ -653,9 +654,45 @@ public class identifyTypeNew {
             exception.printStackTrace();
         }
     }
+
+    public static void setTestImg(Mat image,String txt){
+        String saveName="D://error/test";
+        try {
+            long count = Files.list(Paths.get(saveName)).filter(Files::isRegularFile).count();
+            if(count>10000){
+                log.info("错误文件大于5000不再存储 以免磁盘满");
+                //只删 2000 张最旧的
+                new Thread(() -> {
+                    try (Stream<Path> paths = Files.list(Paths.get(saveName))) {
+                        paths.filter(Files::isRegularFile)
+                                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                                .limit(5000)
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+                return;
+            }
+            log.info("错误存储地址{}", saveName);
+            File imageFile = new File(saveName);
+            if (!imageFile.exists()) {
+                imageFile.mkdirs();
+            }
+            Imgcodecs.imwrite(saveName+"/"+txt+System.currentTimeMillis()+".jpg", image);
+        }catch (Exception exception){
+            exception.printStackTrace();
+        }
+    }
     //不通过的图片
     public void setBeforeImg(Mat image,String txt){
-        String saveName="D://error//before";
+        String saveName="D://error//"+txt;
         try {
             long count = Files.list(Paths.get(saveName)).filter(Files::isRegularFile).count();
             if(count>10000){

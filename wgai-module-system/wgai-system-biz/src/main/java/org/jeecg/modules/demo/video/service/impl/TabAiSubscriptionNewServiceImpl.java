@@ -20,6 +20,7 @@ import org.jeecg.modules.demo.video.util.*;
 import org.jeecg.modules.tab.AIModel.NetPush;
 import org.jeecg.modules.tab.entity.TabAiModel;
 import org.jeecg.modules.tab.mapper.TabAiModelMapper;
+import org.opencv.core.Mat;
 import org.opencv.dnn.Dnn;
 import org.opencv.dnn.Net;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +30,7 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -37,6 +39,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -150,8 +153,8 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                     //Executors.newCachedThreadPool(4);
 
             //判断取流方式
-            //executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
             executor.submit(new VideoReadPicNew(tabAiSubscriptionNew,redisTemplate));
+          //  executor.submit(new VideoReadPicNewOptimized(tabAiSubscriptionNew,redisTemplate));
 
 
          //   executor.submit(new VideoReadPicNewWithDisruptor(tabAiSubscriptionNew,redisTemplate));
@@ -174,29 +177,45 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
         return  tabAiModel;
     }
 
-    public Net getNetModel(TabAiSubscriptionNew tabAiSubscriptionNew,TabAiModel tabAiModel){
-        Net net = null;
-        if (tabAiModel.getSpareOne().equals("1")) {  //v3
-            net = Dnn.readNetFromDarknet(tabAiModel.getAiConfig(), tabAiModel.getAiWeights());
-        } else if (tabAiModel.getSpareOne().equals("2") || tabAiModel.getSpareOne().equals("3")) { //v5 v8
-            net = Dnn.readNetFromONNX( tabAiModel.getAiWeights());
-        }
+    private static final ConcurrentHashMap<String, Net> GLOBAL_NET_CACHE = new ConcurrentHashMap<>();
 
-        if (tabAiSubscriptionNew.getEventTypes().equals("1")) { //gpu
-            net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
-            net.setPreferableTarget(Dnn.DNN_TARGET_CUDA);  //gpu推理
-            log.info("[DNN推理规则：GPU]");
-        } else if(tabAiSubscriptionNew.getEventTypes().equals("2")){
-            net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-            net.setPreferableTarget(Dnn.DNN_TARGET_CPU);  //cpu推理
-            log.info("[DNN推理规则：CPU]");
-        }else if(tabAiSubscriptionNew.getEventTypes().equals("2")) {
-            net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
-            net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL);  //OpenCL推理
-            log.info("[DNN推理规则：OpenCL]");
+    public Net getNetModel(TabAiSubscriptionNew tabAiSubscriptionNew,TabAiModel tabAiModel){
+
+        Net net= GLOBAL_NET_CACHE.get(tabAiModel.getId());
+        if(net==null){ //尽量减少消耗
+            if (tabAiModel.getSpareOne().equals("1")) {  //v3
+                net = Dnn.readNetFromDarknet(tabAiModel.getAiConfig(), tabAiModel.getAiWeights());
+            } else if (tabAiModel.getSpareOne().equals("2") || tabAiModel.getSpareOne().equals("3")) { //v5 v8
+                net = Dnn.readNetFromONNX( tabAiModel.getAiWeights());
+            }
+
+            if (tabAiSubscriptionNew.getEventTypes().equals("1")) { //gpu
+                net.setPreferableBackend(Dnn.DNN_BACKEND_CUDA);
+                net.setPreferableTarget(Dnn.DNN_TARGET_CUDA);  //gpu推理
+                log.info("[DNN推理规则：GPU]");
+            } else if(tabAiSubscriptionNew.getEventTypes().equals("2")){
+                net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+                net.setPreferableTarget(Dnn.DNN_TARGET_CPU);  //cpu推理
+                log.info("[DNN推理规则：CPU]");
+            }else if(tabAiSubscriptionNew.getEventTypes().equals("3")) {
+                net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+                net.setPreferableTarget(Dnn.DNN_TARGET_OPENCL);  //OpenCL推理
+                log.info("[DNN推理规则：OpenCL]");
+            }else if(tabAiSubscriptionNew.getEventTypes().equals("4")) {
+                //net.setPreferableBackend(Dnn.DNN_BACKEND_INFERENCE_ENGINE);
+                net.setPreferableBackend(Dnn.DNN_BACKEND_OPENCV);
+                net.setPreferableTarget(Dnn.DNN_TARGET_CPU);
+                log.info("[DNN推理规则：OpenVINO]");
+            }
+            GLOBAL_NET_CACHE.put(tabAiModel.getId(),net);
+        }else{
+            log.info("【已经存在net直接返回】");
         }
         return net;
     }
+
+
+
 
     @Override
     public void stopAi(TabAiSubscriptionNew tabAiSubscriptionNew) {

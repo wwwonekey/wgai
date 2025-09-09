@@ -117,19 +117,19 @@ public class FrameQualityFilter {
         double meanR = Core.mean(channels.get(2)).val[0];
         double max = Math.max(meanR, Math.max(meanG, meanB));
         double min = Math.min(meanR, Math.min(meanG, meanB));
-        log.info("Average R={}, G={}, B={}", meanR,meanG, meanB);
+        log.debug("Average R={}, G={}, B={}", meanR,meanG, meanB);
         double maxSub=(max - min);
         double sumRGB= (meanR+meanB+meanG)/3;
-        log.info("Average max={},min={},avg={},maxSub={}",max,min, sumRGB,maxSub);
+        log.debug("Average max={},min={},avg={},maxSub={}",max,min, sumRGB,maxSub);
         if( sumRGB>120 && sumRGB<140 && maxSub< 10) {
             //进一步确定是灰度图片吗
             double[] result = getBrightnessAndSaturation(image);
-            log.info("图像亮度(平均V):{}", result[0]);
-            log.info("图像饱和度(平均S): {}", result[1]);
+            log.debug("图像亮度(平均V):{}", result[0]);
+            log.debug("图像饱和度(平均S): {}", result[1]);
        //     boolean isGray = isGrayByHistogram(image, 0.99);
         //    System.out.println("图像是否为灰图: " + isGray);
             if(result[1]>15){
-                log.info("二次判定不是灰色图片呢");
+                log.info("【二次判定不是灰色图片-通过验证】");
                 return  false;
             }
             return true;
