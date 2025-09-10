@@ -3,6 +3,8 @@ package org.jeecg.modules.tab.controller;
 import java.util.Arrays;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import com.alibaba.fastjson.JSONObject;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.modules.tab.entity.TabAiModel;
@@ -15,7 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -61,16 +65,36 @@ public class TabAiModelController extends JeecgController<TabAiModel, ITabAiMode
 	 @PostMapping(value = "/nextModel")
 	 public Result<?> nextModel(@RequestBody TabAiModel tabAiModel ,HttpServletRequest req) {
 
-		 return tabAiModelService.nextModel(tabAiModel);
+		 return tabAiModelService.nextModelFile(tabAiModel);
 	 }
+
+//	 @ApiOperation(value="AI模型-接收", notes="AI模型-接收")
+//	 @PostMapping(value = "/receiveModel")
+//	 public Result<?> receiveModel(@RequestBody TabAiModel tabAiModel ,HttpServletRequest req) {
+//
+//		 return tabAiModelService.receiveModel(tabAiModel);
+//	 }
 
 	 @ApiOperation(value="AI模型-接收", notes="AI模型-接收")
-	 @PostMapping(value = "/receiveModel")
-	 public Result<?> receiveModel(@RequestBody TabAiModel tabAiModel ,HttpServletRequest req) {
+	 @PostMapping(value = "/receiveModel", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	 public Result<?> receiveModel(
+			 @RequestParam("modelData") String modelDataJson,
+			 @RequestParam(value = "aiWeights", required = false) MultipartFile aiWeightsFile,
+			 @RequestParam(value = "aiConfig", required = false) MultipartFile aiConfigFile,
+			 @RequestParam(value = "aiNameName", required = false) MultipartFile aiNameNameFile,
+			 HttpServletRequest req) {
 
-		 return tabAiModelService.receiveModel(tabAiModel);
+		 try {
+			 // 解析模型基础信息
+			 TabAiModel tabAiModel = JSONObject.parseObject(modelDataJson, TabAiModel.class);
+			 return tabAiModelService.receiveModelFile(tabAiModel, aiWeightsFile, aiConfigFile, aiNameNameFile);
+		 } catch (Exception e) {
+			 log.error("解析模型数据失败", e);
+			 return Result.error("解析模型数据失败: " + e.getMessage());
+		 }
 	 }
-	/**
+
+	 /**
 	 *   添加
 	 *
 	 * @param tabAiModel
