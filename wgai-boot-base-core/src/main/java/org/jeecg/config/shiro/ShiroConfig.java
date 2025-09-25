@@ -103,6 +103,7 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/sys/checkAuth", "anon"); //授权接口排除
 
         filterChainDefinitionMap.put("/tab/testAI/**", "anon"); //测试接口
+        filterChainDefinitionMap.put("/video/tabAiWarning/addPush", "anon"); //测试接口
 
         filterChainDefinitionMap.put("/", "anon");
         filterChainDefinitionMap.put("/doc.html", "anon");
