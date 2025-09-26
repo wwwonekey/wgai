@@ -66,7 +66,7 @@ public interface ITabAiHistoryService extends IService<TabAiHistory> {
      * @param path
      * @return
      */
-    public int saveIdentifyYolov5(TabAiModelBund tabAiModelBund,String path);
+    public int saveIdentifyYolov(TabAiModelBund tabAiModelBund,String path,String type);
 
     /***
      * v8识别内容

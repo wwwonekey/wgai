@@ -308,8 +308,10 @@ public class identifyTypeNew {
 
             // 读取输入图像
             Long a = System.currentTimeMillis();
+
+            Mat processedImage = letterboxResize(image, 640, 640);
             // 将图像传递给模型进行目标检测
-            Mat blob = Dnn.blobFromImage(image, 1.0 / 255, new Size(640, 640), new Scalar(0), true, false);
+            Mat blob = Dnn.blobFromImage(processedImage, 1.0 / 255, new Size(640, 640), new Scalar(0), true, false);
             net.setInput(blob);
             // 将图像传递给模型进行目标检测
             List<Mat> result = new ArrayList<>();
@@ -317,28 +319,65 @@ public class identifyTypeNew {
             net.forward(result, outBlobNames);
 
             // 处理检测结果
-            float confThreshold = 0.42f;
-            float nmsThreshold = 0.41f;
+            float confThreshold = 0.35f;
+            float nmsThreshold = 0.3f;
             List<Rect2d> boxes2d = new ArrayList<>();
             List<Float> confidences = new ArrayList<>();
             List<Integer> classIds = new ArrayList<>();
 
             for (Mat output : result) {
                 int dims = output.dims();
-                int index = (int) output.size(0);
-                int rows = (int) output.size(1);
-                int cols = (int) output.size(2);
-                //
-                // Dims: 3, Rows: 25200, Cols: 8 row,Mat [ 1*25200*8*CV_32FC1, isCont=true, isSubmat=false, nativeObj=0x28dce2da990, dataAddr=0x28dd0ebc640 ]index:1
-                //    log.info("Dims: " + dims + ", Rows: " + rows + ", Cols: " + cols+" row,"+output.row(0)+"index:"+index);
-                Mat detectionMat = output.reshape(1, output.size(1));
+                long dim0 = output.size(0);
+                long dim1 = output.size(1);
+                long dim2 = output.size(2);
 
-                for (int i = 0; i < detectionMat.rows(); i++) {
+                System.out.println("输出维度: [" + dim0 + ", " + dim1 + ", " + dim2 + "]");
+
+                Mat detectionMat;
+                int rows, cols;
+
+                // 判断是YOLOv11还是YOLOv5格式
+                if (dims == 3 && dim1 < 100 && dim2 > 1000) {
+                    // YOLOv11格式 [1, 84, 8400]
+                    log.info("检测到YOLOv11格式");
+                    Mat reshaped = output.reshape(1, (int) dim1);
+                    Mat transposed = new Mat();
+                    Core.transpose(reshaped, transposed);
+                    detectionMat = transposed;
+                    rows = (int) dim2;
+                    cols = (int) dim1;
+                } else {
+                    // YOLOv5格式
+                    log.info("检测到YOLOv5格式");
+                    detectionMat = output.reshape(1, (int) output.size(1));
+                    rows = detectionMat.rows();
+                    cols = detectionMat.cols();
+                }
+
+                log.info("处理后矩阵: " + rows + "x" + cols);
+
+                for (int i = 0; i < rows; i++) {
                     Mat detection = detectionMat.row(i);
-                    Mat scores = detection.colRange(5, cols);
-                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
-                    float confidence = (float) detection.get(0, 4)[0];
-                    Point classIdPoint = minMaxResult.maxLoc;
+
+                    float confidence;
+                    Mat scores;
+                    Point classIdPoint;
+
+                    if (cols == 84) {
+                        // ==========关键修正3: YOLOv11置信度计算==========
+                        // YOLOv11格式：[x, y, w, h, class0_conf, class1_conf, ...]
+                        scores = detection.colRange(4, cols);
+                        Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                        confidence = (float) minMaxResult.maxVal;
+                        classIdPoint = minMaxResult.maxLoc;
+                    } else {
+                        // YOLOv5格式
+                        confidence = (float) detection.get(0, 4)[0];
+                        scores = detection.colRange(5, cols);
+                        Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                        classIdPoint = minMaxResult.maxLoc;
+                        confidence *= (float) minMaxResult.maxVal;
+                    }
 
                     if (confidence > confThreshold) {
                         float centerX = (float) detection.get(0, 0)[0];
@@ -352,10 +391,13 @@ public class identifyTypeNew {
                         classIds.add((int) classIdPoint.x);
                         confidences.add(confidence);
                         boxes2d.add(new Rect2d(left, top, width, height));
-                        //  System.out.println("识别到了");
+
+//                        log.info("检测到目标: 类别={}, 置信度={}, 坐标=({},{},{},{})",
+//                                (int)classIdPoint.x, confidence, left, top, width, height);
                     }
                 }
             }
+
 
             if (confidences.size() <= 0||confidences.size()>200) {
                 log.warn(tabAiSubscriptionNew.getName() + ":当前未检测到内容");
@@ -369,7 +411,7 @@ public class identifyTypeNew {
             MatOfInt indices = new MatOfInt();
             Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
             if (!boxes_mat.empty() && !confidences_mat.empty()) {
-                System.out.println("不为空");
+                log.info("不为空");
                 Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
             }
 
@@ -380,9 +422,11 @@ public class identifyTypeNew {
                 return returnBox;
             }
             //     log.info(confidences.size() + "类别下标啊" + indicesArray.length);
-            // 在图像上绘制保留的边界框
-            int c = 0;
 
+            // 计算letterbox的缩放参数
+            double scale = Math.min(640.0 / image.cols(), 640.0 / image.rows());
+            double dx = (640 - image.cols() * scale) / 2;
+            double dy = (640 - image.rows() * scale) / 2;
             List<retureBoxInfo> list=new ArrayList<>();
             for (int idx : indicesArray) {
 
@@ -391,12 +435,17 @@ public class identifyTypeNew {
                 Integer ab = classIds.get(idx);
                 String name = classNames.get(ab);
                 Rect2d box = boxes2d.get(idx);
-                double x = box.x;
-                double y = box.y;
-                double width = box.width * ((double) image.cols() / 640);
-                double height = box.height * ((double) image.rows() / 640);
-                double xzb = x * ((double) image.cols() / 640);
-                double yzb = y * ((double) image.rows() / 640);
+                // 还原到原图坐标
+                double xzb = (box.x - dx) / scale;
+                double yzb = (box.y - dy) / scale;
+                double width = box.width / scale;
+                double height = box.height / scale;
+
+                // 确保坐标在图像范围内
+                xzb = Math.max(0, Math.min(xzb, image.cols() - 1));
+                yzb = Math.max(0, Math.min(yzb, image.rows() - 1));
+                width = Math.min(width, image.cols() - xzb);
+                height = Math.min(height, image.rows() - yzb);
 
                 TabAiBase aiBase = VideoSendReadCfg.map.get(name);
                 if (aiBase == null) {
@@ -577,30 +626,26 @@ public class identifyTypeNew {
     }
 
 
-    public boolean detectObjectsDifyV5(TabAiSubscriptionNew pushInfo, Mat image, NetPush netPush, RedisTemplate redisTemplate,List<retureBoxInfo> retureBoxInfos) {
+    public boolean detectObjectsDifyV11(TabAiSubscriptionNew pushInfo, Mat image, NetPush netPush, RedisTemplate redisTemplate,List<retureBoxInfo> retureBoxInfos) {
 
         long time = Long.parseLong(pushInfo.getEventNumber());
         Object beforTime = redisTemplate.opsForValue().get(netPush.getId());
         if (beforTime == null) {
             log.info("当前间隔消失可以推送了-间隔时间{}-当前可以推送的是{},当前数据：{}", time, pushInfo.getName(),JSON.toJSONString(retureBoxInfos));
-//             if(printAverageRGB(image)){
-//                setErrorImg(image,"huidutu");
-//                log.info("当前是灰度图片");
-//                return false;
-//             };
-
         } else {
             return false;
         }
         Net net = netPush.getNet();
         List<String> classNames = netPush.getClaseeNames();
+
         String uploadpath = netPush.getUploadPath();
         String settingId = netPush.getId();
+
         TabAiModel tabAiModel = netPush.getTabAiModel();
         // 读取输入图像
         Long a = System.currentTimeMillis();
         // 将图像传递给模型进行目标检测
-        Mat blob = Dnn.blobFromImage(image, 1.0 / 255, new Size(640, 640), new Scalar(0), true, false);
+        Mat blob = Dnn.blobFromImage(image, 1.0 / 255.0, new Size(640, 640), new Scalar(0, 0, 0), true, false, CvType.CV_32F);
         net.setInput(blob);
         // 将图像传递给模型进行目标检测
         List<Mat> result = new ArrayList<>();
@@ -616,20 +661,57 @@ public class identifyTypeNew {
 
         for (Mat output : result) {
             int dims = output.dims();
-            int index = (int) output.size(0);
-            int rows = (int) output.size(1);
-            int cols = (int) output.size(2);
-            //
-            // Dims: 3, Rows: 25200, Cols: 8 row,Mat [ 1*25200*8*CV_32FC1, isCont=true, isSubmat=false, nativeObj=0x28dce2da990, dataAddr=0x28dd0ebc640 ]index:1
-            //    log.info("Dims: " + dims + ", Rows: " + rows + ", Cols: " + cols+" row,"+output.row(0)+"index:"+index);
-            Mat detectionMat = output.reshape(1, output.size(1));
+            long dim0 = output.size(0);
+            long dim1 = output.size(1);
+            long dim2 = output.size(2);
 
-            for (int i = 0; i < detectionMat.rows(); i++) {
+            log.info("输出维度: [" + dim0 + ", " + dim1 + ", " + dim2 + "]");
+
+            Mat detectionMat;
+            int rows, cols;
+
+            // 判断是YOLOv11还是YOLOv5格式
+            if (dims == 3 && dim1 < 100 && dim2 > 1000) {
+                // YOLOv11格式 [1, 84, 8400]
+                log.info("检测到YOLOv11格式");
+                Mat reshaped = output.reshape(1, (int) dim1);
+                Mat transposed = new Mat();
+                Core.transpose(reshaped, transposed);
+                detectionMat = transposed;
+                rows = (int) dim2;
+                cols = (int) dim1;
+            } else {
+                // YOLOv5格式
+                log.info("检测到YOLOv5格式");
+                detectionMat = output.reshape(1, (int) output.size(1));
+                rows = detectionMat.rows();
+                cols = detectionMat.cols();
+            }
+
+            log.info("处理后矩阵: " + rows + "x" + cols);
+
+            for (int i = 0; i < rows; i++) {
                 Mat detection = detectionMat.row(i);
-                Mat scores = detection.colRange(5, cols);
-                Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
-                float confidence = (float) detection.get(0, 4)[0];
-                Point classIdPoint = minMaxResult.maxLoc;
+
+                float confidence;
+                Mat scores;
+                Point classIdPoint;
+
+                if (cols == 84) {
+                    // ==========关键修正3: YOLOv11置信度计算==========
+                    // YOLOv11格式：[x, y, w, h, class0_conf, class1_conf, ...]
+                    scores = detection.colRange(4, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    confidence = (float) minMaxResult.maxVal;
+                    classIdPoint = minMaxResult.maxLoc;
+                } else {
+                    // YOLOv5 v8格式
+                    confidence = (float) detection.get(0, 4)[0];
+                    scores = detection.colRange(5, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    classIdPoint = minMaxResult.maxLoc;
+                    confidence *= (float) minMaxResult.maxVal;
+                }
 
                 if (confidence > confThreshold) {
                     float centerX = (float) detection.get(0, 0)[0];
@@ -643,16 +725,18 @@ public class identifyTypeNew {
                     classIds.add((int) classIdPoint.x);
                     confidences.add(confidence);
                     boxes2d.add(new Rect2d(left, top, width, height));
-                    //  System.out.println("识别到了");
+
+                    log.info("检测到目标: 类别={}, 置信度={}, 坐标=({},{},{},{})",
+                            (int)classIdPoint.x, confidence, left, top, width, height);
                 }
             }
         }
+
         boolean flag;
         String savepath = uploadpath + File.separator + "push" + File.separator;
         if (confidences.size() <= 0||confidences.size()>200) {
             log.warn(pushInfo.getName() + ":当前未检测到内容：{}-{}",netPush.getTabAiModel().getAiName(),confidences.size());
             //setBeforeImg(image,"end");
-
             if(netPush.getWarinngMethod()==1){//0 是识别到报警  1 是未识别到报警
                 log.info("[未识别到推送数据]:{}",netPush.getIsFollow());
                 String   saveName = savepath + System.currentTimeMillis() + ".jpg";
@@ -661,15 +745,17 @@ public class identifyTypeNew {
             }
             return false;
         }
+        log.info("NMS前检测框数量: " + boxes2d.size());
         // 执行非最大抑制，消除重复的边界框
         MatOfRect2d boxes_mat = new MatOfRect2d();
         boxes_mat.fromList(boxes2d);
-        log.info("confidences.size{}", confidences.size());
+
+
         MatOfFloat confidences_mat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
         MatOfInt indices = new MatOfInt();
         Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
         if (!boxes_mat.empty() && !confidences_mat.empty()) {
-            System.out.println("不为空");
+            log.info("不为空");
             Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
         }
 
@@ -677,12 +763,11 @@ public class identifyTypeNew {
 
         // 获取保留的边界框
         if(indicesArray.length>50){
-
             setErrorImg(image,"maxIndex");
-            log.info("最大消除后最大识别数量50 不可能大于50 "+indicesArray.length);
+            log.warn("最大消除后最大识别数量50 不可能大于50 "+indicesArray.length);
             return false;
         }
-        log.info(confidences.size() + "类别下标啊" + indicesArray.length);
+        log.info(confidences.size() + "类别下标啊-NMS前检测框数量" + indicesArray.length);
         // 在图像上绘制保留的边界框
         int c = 0;
         String audioText = "";
@@ -691,18 +776,28 @@ public class identifyTypeNew {
         String warnName = "";
         //保存识别前的图片
         setBeforeImg(image,"end");
+        // 计算letterbox的缩放参数
+        double scale = Math.min(640.0 / image.cols(), 640.0 / image.rows());
+        double dx = (640 - image.cols() * scale) / 2;
+        double dy = (640 - image.rows() * scale) / 2;
+
         for (int idx : indicesArray) {
             // 添加类别标签
             Rect2d box = boxes2d.get(idx);
             Integer ab = classIds.get(idx);
             String name = classNames.get(ab);
             float conf = confidences.get(idx);
-            double x = box.x;
-            double y = box.y;
-            double width = box.width * ((double) image.cols() / 640);
-            double height = box.height * ((double) image.rows() / 640);
-            double xzb = x * ((double) image.cols() / 640);
-            double yzb = y * ((double) image.rows() / 640);
+
+            // 还原到原图坐标
+            double xzb = (box.x - dx) / scale;
+            double yzb = (box.y - dy) / scale;
+            double width = box.width / scale;
+            double height = box.height / scale;
+            // 确保坐标在图像范围内
+            xzb = Math.max(0, Math.min(xzb, image.cols() - 1));
+            yzb = Math.max(0, Math.min(yzb, image.rows() - 1));
+            width = Math.min(width, image.cols() - xzb);
+            height = Math.min(height, image.rows() - yzb);
 
             if(netPush.getIsFollow()==0){
                 log.info("[只要识别前置模型内的内容x:{},y:{},JSON:{}] ",xzb,yzb, JSON.toJSONString(retureBoxInfos));
@@ -716,7 +811,7 @@ public class identifyTypeNew {
             }
 
             if(pushInfo.getIsBy()==0){//开启了 0开启 1未开启
-                boolean isPointFlag= isPointInArea(x, y,  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
+                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
                 log.info("[是否在区域内]:"+isPointFlag);
                 if(isPointFlag){
                     log.info("[在区域内]");
@@ -801,7 +896,7 @@ public class identifyTypeNew {
 //                return  false;
 //            }
             Long b = System.currentTimeMillis();
-            log.info("识别消耗时间V5：" + (b - a) + "ms");
+            log.info("识别消耗时间V5-v11：" + (b - a) + "ms");
             isOk(pushInfo, netPush, redisTemplate, saveName, tabAiModel, audioText, warnNumber, warnText, warnName, savepath);
 //            if(pushInfo.getAudioStatic()==0){
 //                log.info("语音播报："+audioText);
@@ -823,6 +918,337 @@ public class identifyTypeNew {
 
 
         return true;
+    }
+
+    public boolean detectObjectsDifyV5(TabAiSubscriptionNew pushInfo, Mat image, NetPush netPush, RedisTemplate redisTemplate,List<retureBoxInfo> retureBoxInfos) {
+
+        long time = Long.parseLong(pushInfo.getEventNumber());
+        Object beforTime = redisTemplate.opsForValue().get(netPush.getId());
+        if (beforTime == null) {
+            log.info("当前间隔消失可以推送了-间隔时间{}-当前可以推送的是{},当前数据：{}", time, pushInfo.getName(),JSON.toJSONString(retureBoxInfos));
+//             if(printAverageRGB(image)){
+//                setErrorImg(image,"huidutu");
+//                log.info("当前是灰度图片");
+//                return false;
+//             };
+
+        } else {
+            return false;
+        }
+        Net net = netPush.getNet();
+        List<String> classNames = netPush.getClaseeNames();
+        String uploadpath = netPush.getUploadPath();
+        String settingId = netPush.getId();
+        TabAiModel tabAiModel = netPush.getTabAiModel();
+        // 读取输入图像
+        Long a = System.currentTimeMillis();
+        // 将图像传递给模型进行目标检测
+        // ==========关键修正1: 使用letterbox预处理 以前不必须纠正 后续v8 v10 v11需要纠正==========
+        Mat processedImage = letterboxResize(image, 640, 640);
+
+        // 创建blob - 注意参数调整
+        Mat blob = Dnn.blobFromImage(processedImage, 1.0 / 255.0, new Size(640, 640), new Scalar(0, 0, 0), true, false, CvType.CV_32F);
+        net.setInput(blob);;
+        // 将图像传递给模型进行目标检测
+        List<Mat> result = new ArrayList<>();
+        List<String> outBlobNames = net.getUnconnectedOutLayersNames();
+        net.forward(result, outBlobNames);
+
+        // 处理检测结果
+        float confThreshold = 0.4f;
+        float nmsThreshold = 0.4f;
+        List<Rect2d> boxes2d = new ArrayList<>();
+        List<Float> confidences = new ArrayList<>();
+        List<Integer> classIds = new ArrayList<>();
+
+        for (Mat output : result) {
+            int dims = output.dims();
+            long dim0 = output.size(0);
+            long dim1 = output.size(1);
+            long dim2 = output.size(2);
+
+            log.info("输出维度: [" + dim0 + ", " + dim1 + ", " + dim2 + "]");
+
+            Mat detectionMat;
+            int rows, cols;
+
+            // 判断是YOLOv11还是YOLOv5格式
+            if (dims == 3 && dim1 < 100 && dim2 > 1000) {
+                // YOLOv11格式 [1, 84, 8400]
+                log.info("检测到YOLOv11格式");
+                Mat reshaped = output.reshape(1, (int) dim1);
+                Mat transposed = new Mat();
+                Core.transpose(reshaped, transposed);
+                detectionMat = transposed;
+                rows = (int) dim2;
+                cols = (int) dim1;
+            } else {
+                // YOLOv5格式
+                log.info("检测到YOLOv5格式");
+                detectionMat = output.reshape(1, (int) output.size(1));
+                rows = detectionMat.rows();
+                cols = detectionMat.cols();
+            }
+
+            log.info("处理后矩阵: " + rows + "x" + cols);
+
+            for (int i = 0; i < rows; i++) {
+                Mat detection = detectionMat.row(i);
+
+                float confidence;
+                Mat scores;
+                Point classIdPoint;
+
+                if (cols == 84) {
+                    // ==========关键修正3: YOLOv11置信度计算==========
+                    // YOLOv11格式：[x, y, w, h, class0_conf, class1_conf, ...]
+                    scores = detection.colRange(4, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    confidence = (float) minMaxResult.maxVal;
+                    classIdPoint = minMaxResult.maxLoc;
+                } else {
+                    // YOLOv5 v8格式
+                    confidence = (float) detection.get(0, 4)[0];
+                    scores = detection.colRange(5, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    classIdPoint = minMaxResult.maxLoc;
+                    confidence *= (float) minMaxResult.maxVal;
+                }
+
+                if (confidence > confThreshold) {
+                    float centerX = (float) detection.get(0, 0)[0];
+                    float centerY = (float) detection.get(0, 1)[0];
+                    float width = (float) detection.get(0, 2)[0];
+                    float height = (float) detection.get(0, 3)[0];
+
+                    float left = centerX - width / 2;
+                    float top = centerY - height / 2;
+
+                    classIds.add((int) classIdPoint.x);
+                    confidences.add(confidence);
+                    boxes2d.add(new Rect2d(left, top, width, height));
+
+//                    log.info("检测到目标: 类别={}, 置信度={}, 坐标=({},{},{},{})",
+//                            (int)classIdPoint.x, confidence, left, top, width, height);
+                }
+            }
+        }
+        boolean flag;
+        String savepath = uploadpath + File.separator + "push" + File.separator;
+        if (confidences.size() <= 0||confidences.size()>200) {
+            log.warn(pushInfo.getName() + ":当前未检测到内容：{}-{}",netPush.getTabAiModel().getAiName(),confidences.size());
+            //setBeforeImg(image,"end");
+
+            if(netPush.getWarinngMethod()==1){//0 是识别到报警  1 是未识别到报警
+                log.info("[未识别到推送数据]:{}",netPush.getIsFollow());
+                String   saveName = savepath + System.currentTimeMillis() + ".jpg";
+                Imgcodecs.imwrite(saveName, image);
+                isOk(pushInfo,netPush,redisTemplate,saveName,tabAiModel,netPush.getNoDifText(),1,netPush.getNoDifText(),netPush.getNoDifText(),savepath);
+            }
+            return false;
+        }
+        log.info("NMS前检测框数量: " + boxes2d.size());
+        // 执行非最大抑制，消除重复的边界框
+        MatOfRect2d boxes_mat = new MatOfRect2d();
+        boxes_mat.fromList(boxes2d);
+
+        MatOfFloat confidences_mat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+        MatOfInt indices = new MatOfInt();
+        Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
+        if (!boxes_mat.empty() && !confidences_mat.empty()) {
+            log.info("不为空");
+            Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
+        }
+
+        int[] indicesArray = indices.toArray();
+
+        // 获取保留的边界框
+        if(indicesArray.length>50){
+
+            setErrorImg(image,"maxIndex");
+            log.info("最大消除后最大识别数量50 不可能大于50 "+indicesArray.length);
+            return false;
+        }
+        log.info(confidences.size() + "类别下标-NMS后检测框数量" + indicesArray.length);
+        // 在图像上绘制保留的边界框
+        int c = 0;
+        String audioText = "";
+        Integer warnNumber = 0;
+        String warnText = "";
+        String warnName = "";
+        //保存识别前的图片
+        setBeforeImg(image,"end");
+        // 计算letterbox的缩放参数
+        double scale = Math.min(640.0 / image.cols(), 640.0 / image.rows());
+        double dx = (640 - image.cols() * scale) / 2;
+        double dy = (640 - image.rows() * scale) / 2;
+
+        for (int idx : indicesArray) {
+            // 添加类别标签
+            Rect2d box = boxes2d.get(idx);
+            Integer ab = classIds.get(idx);
+            String name = classNames.get(ab);
+            float conf = confidences.get(idx);
+            // 还原到原图坐标
+            double xzb = (box.x - dx) / scale;
+            double yzb = (box.y - dy) / scale;
+            double width = box.width / scale;
+            double height = box.height / scale;
+            // 确保坐标在图像范围内
+            xzb = Math.max(0, Math.min(xzb, image.cols() - 1));
+            yzb = Math.max(0, Math.min(yzb, image.rows() - 1));
+            width = Math.min(width, image.cols() - xzb);
+            height = Math.min(height, image.rows() - yzb);
+
+            if(netPush.getIsFollow()==0){
+                log.info("[只要识别前置模型内的内容x:{},y:{},JSON:{}] ",xzb,yzb, JSON.toJSONString(retureBoxInfos));
+                boolean followFlag= retureBoxInfo.getLocalhost(retureBoxInfos,xzb,yzb,netPush.getFollowPosition());
+                if(!followFlag){
+                    log.info("[不在范围内到直接跳过]");
+                    continue;
+                }else{
+                    log.info("[在范围内开始推送： ]");
+                }
+            }
+
+            if(pushInfo.getIsBy()==0){//开启了 0开启 1未开启
+                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
+                log.info("[是否在区域内]:"+isPointFlag);
+                if(isPointFlag){
+                    log.info("[在区域内]");
+                }else{
+                    log.info("[不在区域内]");
+                    continue;
+                }
+            }
+
+            Scalar color=CommonColors(c);
+            TabAiBase aiBase = VideoSendReadCfg.map.get(name);
+            if (aiBase == null) {
+                aiBase = new TabAiBase();
+                aiBase.setChainName(name);
+
+            }else{
+                if(StringUtils.isNotEmpty(aiBase.getSpaceThree())&&aiBase.getSpaceThree().equals("N")){
+                    log.warn("【当前不推送：{}】",name);
+                    continue;
+                }
+
+                color=getColor(aiBase.getRgbColor());
+            }
+            log.error("【当前推送：{}】",name);
+
+
+            audioText += aiBase.getRemark() + aiBase.getSpaceOne();
+            warnNumber += aiBase.getSpaceTwo() == null ? 1 : aiBase.getSpaceTwo();
+            warnText = setNmsName(warnText,StringUtils.isEmpty(aiBase.getRemark()) == true ? aiBase.getChainName() : aiBase.getRemark());
+            warnName = setNmsName(warnName,aiBase.getChainName());
+            // Imgproc.rectangle(image, new Point(box.x, box.y), new Point(box.x + box.width, box.y + box.height),CommonColors(c), 2);
+            Imgproc.rectangle(image,
+                    new Point(xzb, yzb),
+                    new Point(xzb + width, yzb + height),
+                    color, 2);
+            //    log.info( "类别下标"+ab);
+            image = AIModelYolo3.addChineseText(image, aiBase.getChainName() + conf, new Point(xzb, yzb),color);
+            //  Imgproc.putText(image, classNames.get(ab), new Point(box.x, box.y - 5), Core.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(c), 1);
+            c++;
+        }
+        if(warnNumber>0){
+            redisTemplate.opsForValue().set(netPush.getId(), System.currentTimeMillis(), time, TimeUnit.SECONDS);
+        }else{
+            log.error("【当前不推送：{}】");
+            return false;
+        }
+
+
+        File file = new File(savepath);
+        if (!file.exists()) {
+            file.mkdirs();
+        }
+//        String saveName = settingId;//pushInfo.getId();
+//        if (StringUtils.isNotBlank(saveName)) {
+//            saveName = savepath + saveName + ".jpg";
+//        } else {
+        String   saveName = savepath + System.currentTimeMillis() + ".jpg";
+//        }
+
+        log.info("存储地址{}", saveName);
+        File imageFile = new File(saveName);
+        if (imageFile.exists()) {
+            imageFile.delete();
+        }
+        Imgcodecs.imwrite(saveName, image);
+
+        try {
+//            while(true){
+//                log.info("会一直卡在这吗?");
+//            }
+
+
+//            int endTime= (int) ((b-LastTime)/1000);
+//            if(LastTime==0L){
+//                log.info("当前时间未赋值："+endTime);
+//                LastTime=b;
+//            }else if(endTime>=pushInfo.getTime()){
+//                LastTime=b;
+//                log.info("当前时间频率赋值："+endTime);
+//            }else if(endTime<pushInfo.getTime()){
+//                log.info("当前时间小于间隔："+endTime);
+//                return  false;
+//            }
+            Long b = System.currentTimeMillis();
+            log.info("识别消耗时间V5-v11：" + (b - a) + "ms");
+            isOk(pushInfo, netPush, redisTemplate, saveName, tabAiModel, audioText, warnNumber, warnText, warnName, savepath);
+//            if(pushInfo.getAudioStatic()==0){
+//                log.info("语音播报："+audioText);
+//                String token= getToken(pushInfo.getAudioId());
+//                postAudioText(token,pushInfo.getAudioId(),audioText);
+//            }else{
+//                log.info("语音不播报：");
+//            }
+
+//            LastTime=b;
+
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            log.info("连接失败");
+            return false;
+
+        }
+
+
+        return true;
+    }
+
+    private static Mat letterboxResize(Mat image, int targetWidth, int targetHeight) {
+        int originalWidth = image.cols();
+        int originalHeight = image.rows();
+
+        // 计算缩放比例
+        double scale = Math.min((double) targetWidth / originalWidth, (double) targetHeight / originalHeight);
+
+        // 计算新的尺寸
+        int newWidth = (int) (originalWidth * scale);
+        int newHeight = (int) (originalHeight * scale);
+
+        // 缩放图像
+        Mat resized = new Mat();
+        Imgproc.resize(image, resized, new Size(newWidth, newHeight));
+
+        // 创建目标尺寸的画布（灰色填充）
+        Mat letterboxed = new Mat(targetHeight, targetWidth, image.type(), new Scalar(114, 114, 114));
+
+        // 计算居中位置
+        int dx = (targetWidth - newWidth) / 2;
+        int dy = (targetHeight - newHeight) / 2;
+
+        // 将缩放后的图像复制到画布中心
+        Rect roi = new Rect(dx, dy, newWidth, newHeight);
+        Mat roiMat = new Mat(letterboxed, roi);
+        resized.copyTo(roiMat);
+
+        return letterboxed;
     }
 
     public static boolean isPointInArea(double px, double py, double x, double y, double width, double height) {
@@ -1151,10 +1577,10 @@ public class identifyTypeNew {
             for (int codec : codecs) {
                 writer.open(saveMp4Path, codec, fps, new Size(widthVideo, heightVideo), true);
                 if (writer.isOpened()) {
-                    System.out.println("打开成功，使用 codec：" + codec);
+                    log.info("打开成功，使用 codec：" + codec);
                     break;
                 } else {
-                    System.out.println("打开失败 codec：" + codec);
+                    log.info("打开失败 codec：" + codec);
                 }
             }
             Mat image = new Mat();
@@ -1209,7 +1635,7 @@ public class identifyTypeNew {
                             classIds.add((int) classIdPoint.x);
                             confidences.add(confidence);
                             boxes2d.add(new Rect2d(left, top, width, height));
-                            //  System.out.println("识别到了");
+                            //  log.info("识别到了");
                         }
                     }
                 }
@@ -1225,7 +1651,7 @@ public class identifyTypeNew {
                 MatOfInt indices = new MatOfInt();
                 Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
                 if (!boxes_mat.empty() && !confidences_mat.empty()) {
-                    System.out.println("不为空");
+                    log.info("不为空");
                     Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
                 }
 

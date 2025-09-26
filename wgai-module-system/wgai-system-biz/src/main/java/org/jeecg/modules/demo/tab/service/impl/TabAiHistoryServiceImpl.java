@@ -501,13 +501,20 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
     }
 
     @Override
-    public int saveIdentifyYolov5(TabAiModelBund tabAiModelBund, String path) {
+    public int saveIdentifyYolov(TabAiModelBund tabAiModelBund, String path,String type) {
         Long a=System.currentTimeMillis();
         LambdaQueryWrapper< TabAiModel> query = new LambdaQueryWrapper<>();
         TabAiModel tabAiModel1=modelMapper.selectById(tabAiModelBund.getModelName());
         AIModelYolo3  modelYolo3=new AIModelYolo3();
         try {
-            String savePath=modelYolo3.SendPicYoloV5(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path);
+            String savePath="error";
+           // if(type.equals("11")){
+                log.info("yolov5-11开始预测节点---------------------");
+                savePath=modelYolo3.SendPicYoloV11(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path);
+//            }else{
+//                savePath=modelYolo3.SendPicYoloV5(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path);
+//            }
+
             if(savePath.equals("error")){
                 return 1;
             }
@@ -760,7 +767,7 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
                                 return Result.OK("识别图片成功！");
                             }
                         }else{
-                            int a=this.saveIdentifyYolov5(tabAiModelBund,path);
+                            int a=this.saveIdentifyYolov(tabAiModelBund,path,aiModel.getSpareOne());
                             if(a==0){
                                 return Result.OK("识别图片成功！");
                             }
@@ -777,7 +784,15 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
                     }
                     break;
                 }//v5
-                case "3":
+                case "11":
+                {
+                    int a=this.saveIdentifyYolov(tabAiModelBund,path,aiModel.getSpareOne());
+                    if(a==0){
+                        return Result.OK("识别图片成功！");
+                    }
+                    break;
+                }
+                    case "3":
                 {  log.info("【进入V8开始识别内容】{}",tabAiModelBund.getSpaceTwo());
                     log.info("【进入V8开始识别内容】{}",tabAiModelBund.getSpaceTwo());
                     if(tabAiModelBund.getSpaceOne().equals("0")){ //当前为图片
@@ -794,6 +809,7 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
                         this.saveIdentifyLocalVideoThread(tabAiModelBund,path,userId);
                         return Result.OK("视频识别开始");
                     }
+                    break;
                 }//v8
                 case "4": {    break;}//json
                 case "5": {    break;}//other

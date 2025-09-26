@@ -200,6 +200,14 @@ public class TabModelTryController extends JeecgController<TabModelTry, ITabMode
 	 }
 
 
+	 @ApiOperation(value="获取模型下所有图片列表", notes="获取模型下所有图片列表")
+	 @GetMapping(value = "/getTabModelTry")
+	 public Result<?> getTabModelTry(@RequestParam(name="id",required=true) String id) {
+
+		TabModelTry tabModelTry=this.tabModelTryService.getById(id);
+		return  Result.ok(tabModelTry);
+	 }
+
 	 @ApiOperation(value="更新标记数", notes="更新标记数")
 	 @GetMapping(value = "/startMakeNum")
 	 public Result<?> startMakeNum() {

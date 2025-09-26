@@ -248,7 +248,7 @@ public class TabTrainPythonServiceImpl extends ServiceImpl<TabTrainPythonMapper,
     public  void startTrain( TabTrainPython tabTrainPython7,String id){
          String  path=tabTrainPython7.getPyPath();//yolov5根目录
          String  otherTrain=tabTrainPython7.getSpareOne();
-         String otherExport=tabTrainPython7.getSpareTwo();
+         String   otherExport=tabTrainPython7.getSpareTwo();
         Thread trainingThread = new Thread(() -> {
             StringBuffer stringBuffer=new StringBuffer();
             String cmdTxt="未找到";

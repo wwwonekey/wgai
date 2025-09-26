@@ -78,8 +78,8 @@ public class TabAiWarning implements Serializable {
     private java.lang.String warningPic;
 	/**预警时间*/
 	@Excel(name = "预警时间", width = 15, format = "yyyy-MM-dd")
-	@JsonFormat(timezone = "GMT+8",pattern = "yyyy-MM-dd")
-    @DateTimeFormat(pattern="yyyy-MM-dd")
+    @JsonFormat(timezone = "GMT+8",pattern = "yyyy-MM-dd HH:mm:ss")
+    @DateTimeFormat(pattern="yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty(value = "预警时间")
     private java.util.Date warningTime;
 	/**预警状态*/

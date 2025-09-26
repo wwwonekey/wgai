@@ -71,6 +71,7 @@ public class TabTrainPythonController extends JeecgController<TabTrainPython, IT
 								   @RequestParam(name="pageSize", defaultValue="10") Integer pageSize,
 								   HttpServletRequest req) {
 		QueryWrapper<TabTrainPython> queryWrapper = QueryGenerator.initQueryWrapper(tabTrainPython, req.getParameterMap());
+		queryWrapper.orderByDesc("py_sort","py_type");
 		Page<TabTrainPython> page = new Page<TabTrainPython>(pageNo, pageSize);
 		IPage<TabTrainPython> pageList = tabTrainPythonService.page(page, queryWrapper);
 		return Result.OK(pageList);

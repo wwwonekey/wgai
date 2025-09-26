@@ -221,7 +221,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
         if(net==null){ //尽量减少消耗
             if (tabAiModel.getSpareOne().equals("1")) {  //v3
                 net = Dnn.readNetFromDarknet(tabAiModel.getAiConfig(), tabAiModel.getAiWeights());
-            } else if (tabAiModel.getSpareOne().equals("2") || tabAiModel.getSpareOne().equals("3")) { //v5 v8
+            } else if (tabAiModel.getSpareOne().equals("2") || tabAiModel.getSpareOne().equals("3")|| tabAiModel.getSpareOne().equals("11")) { //v5 v8 v11
                 net = Dnn.readNetFromONNX( tabAiModel.getAiWeights());
             }
 

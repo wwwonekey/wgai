@@ -896,6 +896,7 @@ public class AIModelYolo3 {
         int c=0;
         int[] indices_arr = indices.toArray();
         for (int idx : indices_arr) {
+            log.info("idx{}-{} i",idx,indices_arr.length);
             Rect2d box = boxes2d.get(idx);
             int classId = classIds.get(idx);
             float conf = confidences.get(idx);
@@ -932,6 +933,385 @@ public class AIModelYolo3 {
         Long b=System.currentTimeMillis();
         log.info("消耗时间："+(b-a));
         return saveName+".jpg";
+    }
+
+    /**
+     * yolov11
+     * @param weight
+     * @param names
+     * @param picUrl
+     * @param saveName
+     * @param uploadpath
+     * @return
+     * @throws Exception
+     */
+    public static String SendPicYoloV12(String weight,  String names, String picUrl, String saveName, String uploadpath) throws Exception {
+        log.info(uploadpath);
+        Long a=System.currentTimeMillis();
+        // 加载类别名称
+        List<String> classes = Files.readAllLines(Paths.get(uploadpath+ File.separator +names));
+        // 加载YOLOv11模型
+
+        log.info("weight地址{}",uploadpath+ File.separator +weight);
+        Net net = Dnn.readNetFromONNX(uploadpath+ File.separator +weight);
+        // 读取输入图像
+        log.info("图片地址{}",uploadpath+ File.separator +picUrl);
+        Mat image = Imgcodecs.imread(uploadpath+ File.separator +picUrl);
+        log.info("图片地址{}",image);
+// 2
+        Mat blob = Dnn.blobFromImage(image, 1 / 255.0, new Size(640, 640), new Scalar(0), true, false);
+        net.setInput(blob);
+
+        List<Mat> result = new ArrayList<>();
+        List<String> outBlobNames = getOutputNames(net);
+        net.forward(result, outBlobNames);
+        System.out.println(Arrays.asList(outBlobNames));
+        if (result.isEmpty()) {
+            System.err.println("Failed to get output from the model.");
+            return "error";
+        }
+
+
+        float confThreshold = 0.3f;
+        float nmsThreshold = 0.4f;
+
+        List<Rect2d> boxes2d = new ArrayList<>();
+        List<Float> confidences = new ArrayList<>();
+        List<Integer> classIds = new ArrayList<>();
+
+        for (Mat output : result) {
+            int dims = output.dims();
+            long dim0 = output.size(0);  // batch size
+            long dim1 = output.size(1);  // 通常是84 (4坐标 + 80类别)
+            long dim2 = output.size(2);  // 通常是8400 (检测点数量)
+
+            // YOLOv11: Dims: 3, dim1: 84, dim2: 8400
+            // YOLOv5:  Dims: 3, dim1: 25200, dim2: 85
+            System.out.println("Dims: " + dims + ", dim1: " + dim1 + ", dim2: " + dim2);
+
+            Mat detectionMat;
+            int rows, cols;
+
+
+
+                // YOLOv11格式 [1, 84, 8400] - 需要转置
+                Mat reshaped = output.reshape(1, (int)dim1);  // [84, 8400]
+                Mat transposed = new Mat();
+                Core.transpose(reshaped, transposed);  // [8400, 84]
+                detectionMat = transposed;
+                rows = (int)dim2;  // 8400
+                cols = (int)dim1;  // 84
+
+
+            System.out.println("处理后 - Rows: " + rows + ", Cols: " + cols);
+
+            for (int i = 0; i < rows; i++) {
+                Mat detection = detectionMat.row(i);
+
+                float confidence;
+                Mat scores;
+                Point classIdPoint;
+
+
+                    // YOLOv11格式：[x, y, w, h, class0_conf, class1_conf, ...]
+                    // 前4个是坐标，后面的是各类别置信度
+                    scores = detection.colRange(4, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    confidence = (float)minMaxResult.maxVal;  // 最大置信度
+                    classIdPoint = minMaxResult.maxLoc;
+
+
+                if (confidence > confThreshold) {
+                    float centerX = (float)detection.get(0, 0)[0];
+                    float centerY = (float)detection.get(0, 1)[0];
+                    float width = (float)detection.get(0, 2)[0];
+                    float height = (float)detection.get(0, 3)[0];
+
+                    float left = centerX - width / 2;
+                    float top = centerY - height / 2;
+
+                    classIds.add((int)classIdPoint.x);
+                    confidences.add(confidence);
+                    boxes2d.add(new Rect2d(left, top, width, height));
+                    log.info("识别到了");
+                }
+            }
+        }
+
+// 应用非极大值抑制
+        MatOfRect2d boxes_mat = new MatOfRect2d();
+        boxes_mat.fromList(boxes2d);
+
+        MatOfFloat confidences_mat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+        MatOfInt indices = new MatOfInt();
+
+        if (!boxes_mat.empty() && !confidences_mat.empty()) {
+            System.out.println("不为空");
+            Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
+        }
+
+// 绘制结果
+        int c=0;
+        int[] indices_arr = indices.toArray();
+        for (int idx : indices_arr) {
+            log.info("idx{}-{} i",idx,indices_arr.length);
+            Rect2d box = boxes2d.get(idx);
+            int classId = classIds.get(idx);
+            float conf = confidences.get(idx);
+            double x=box.x;
+            double y=box.y;
+            double width=box.width*((double)image.cols()/640);
+            double height=box.height*((double)image.rows()/640);
+            double xzb=x*((double)image.cols()/640);
+            double yzb=y*((double)image.rows()/640);
+            System.out.println("绘制1"+"x:"+x+"y:"+ y+"");
+            System.out.println("绘制1"+"width:"+width+"height:"+ height+"");
+            System.out.println(image.cols()+" image.cols()"+ Double.valueOf((double)image.cols()/640));
+            System.out.println(image.rows()+" image.rows()"+Double.valueOf((double)image.rows()/640));
+
+            Imgproc.rectangle(image,
+                    new Point(xzb, yzb),
+                    new Point(xzb + width, yzb+ height),
+                    CommonColors(c), 2);
+            String label = classes.get(classId) + ": " + String.format("%.2f", conf);
+            Imgproc.putText(image, label, new Point(xzb, yzb - 10),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(c), 2);
+            c++;
+        }
+        String savepath=uploadpath + File.separator + "temp" + File.separator;
+
+        if(StringUtils.isNotBlank(saveName)){
+            savepath+=saveName+".jpg";
+        }else{
+            saveName=System.currentTimeMillis()+"";
+            savepath+=saveName+".jpg";
+        }
+        log.info(savepath);
+        Imgcodecs.imwrite(savepath, image);
+        Long b=System.currentTimeMillis();
+        log.info("消耗时间："+(b-a));
+        return saveName+".jpg";
+    }
+
+    public static String SendPicYoloV11(String weight, String names, String picUrl, String saveName, String uploadpath) throws Exception {
+        log.info(uploadpath);
+        Long a = System.currentTimeMillis();
+
+        // 加载类别名称
+        List<String> classes = Files.readAllLines(Paths.get(uploadpath + File.separator + names));
+
+        // 加载YOLOv11模型
+        log.info("weight地址{}", uploadpath + File.separator + weight);
+        Net net = Dnn.readNetFromONNX(uploadpath + File.separator + weight);
+
+        // 读取输入图像
+        log.info("图片地址{}", uploadpath + File.separator + picUrl);
+        Mat image = Imgcodecs.imread(uploadpath + File.separator + picUrl);
+        log.info("原始图片尺寸: {}x{}", image.cols(), image.rows());
+
+        // ==========关键修正1: 使用letterbox预处理==========
+        Mat processedImage = letterboxResize(image, 640, 640);
+
+        // 创建blob - 注意参数调整
+        Mat blob = Dnn.blobFromImage(processedImage, 1.0 / 255.0, new Size(640, 640), new Scalar(0, 0, 0), true, false, CvType.CV_32F);
+        net.setInput(blob);
+
+        List<Mat> result = new ArrayList<>();
+        List<String> outBlobNames = getOutputNames(net);
+        net.forward(result, outBlobNames);
+
+        if (result.isEmpty()) {
+            System.err.println("Failed to get output from the model.");
+            return "error";
+        }
+
+        // ==========关键修正2: 调整阈值==========
+        float confThreshold = 0.35f;  // 降低置信度阈值
+        float nmsThreshold = 0.2f;   // 调整NMS阈值
+
+        List<Rect2d> boxes2d = new ArrayList<>();
+        List<Float> confidences = new ArrayList<>();
+        List<Integer> classIds = new ArrayList<>();
+
+        for (Mat output : result) {
+            int dims = output.dims();
+            long dim0 = output.size(0);
+            long dim1 = output.size(1);
+            long dim2 = output.size(2);
+
+            System.out.println("输出维度: [" + dim0 + ", " + dim1 + ", " + dim2 + "]");
+
+            Mat detectionMat;
+            int rows, cols;
+
+            // 判断是YOLOv11还是YOLOv5格式
+            if (dims == 3 && dim1 < 100 && dim2 > 1000) {
+                // YOLOv11格式 [1, 84, 8400]
+                System.out.println("检测到YOLOv11格式");
+                Mat reshaped = output.reshape(1, (int) dim1);
+                Mat transposed = new Mat();
+                Core.transpose(reshaped, transposed);
+                detectionMat = transposed;
+                rows = (int) dim2;
+                cols = (int) dim1;
+            } else {
+                // YOLOv5格式
+                System.out.println("检测到YOLOv5格式");
+                detectionMat = output.reshape(1, (int) output.size(1));
+                rows = detectionMat.rows();
+                cols = detectionMat.cols();
+            }
+
+            System.out.println("处理后矩阵: " + rows + "x" + cols);
+
+            for (int i = 0; i < rows; i++) {
+                Mat detection = detectionMat.row(i);
+
+                float confidence;
+                Mat scores;
+                Point classIdPoint;
+
+                if (cols == 84) {
+                    // ==========关键修正3: YOLOv11置信度计算==========
+                    // YOLOv11格式：[x, y, w, h, class0_conf, class1_conf, ...]
+                    scores = detection.colRange(4, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    confidence = (float) minMaxResult.maxVal;
+                    classIdPoint = minMaxResult.maxLoc;
+                } else {
+                    // YOLOv5格式
+                    confidence = (float) detection.get(0, 4)[0];
+                    scores = detection.colRange(5, cols);
+                    Core.MinMaxLocResult minMaxResult = Core.minMaxLoc(scores);
+                    classIdPoint = minMaxResult.maxLoc;
+                    confidence *= (float) minMaxResult.maxVal;
+                }
+
+                if (confidence > confThreshold) {
+                    float centerX = (float) detection.get(0, 0)[0];
+                    float centerY = (float) detection.get(0, 1)[0];
+                    float width = (float) detection.get(0, 2)[0];
+                    float height = (float) detection.get(0, 3)[0];
+
+                    float left = centerX - width / 2;
+                    float top = centerY - height / 2;
+
+                    classIds.add((int) classIdPoint.x);
+                    confidences.add(confidence);
+                    boxes2d.add(new Rect2d(left, top, width, height));
+
+                    log.info("检测到目标: 类别={}, 置信度={}, 坐标=({},{},{},{})",
+                            (int)classIdPoint.x, confidence, left, top, width, height);
+                }
+            }
+        }
+
+        System.out.println("NMS前检测框数量: " + boxes2d.size());
+
+        // 应用非极大值抑制
+        MatOfRect2d boxes_mat = new MatOfRect2d();
+        boxes_mat.fromList(boxes2d);
+
+        MatOfFloat confidences_mat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+        MatOfInt indices = new MatOfInt();
+
+        if (!boxes_mat.empty() && !confidences_mat.empty()) {
+            Dnn.NMSBoxes(boxes_mat, confidences_mat, confThreshold, nmsThreshold, indices);
+        }
+
+        int[] indices_arr = indices.toArray();
+        System.out.println("NMS后检测框数量: " + indices_arr.length);
+
+        // ==========关键修正4: 坐标还原==========
+        // 计算letterbox的缩放参数
+        double scale = Math.min(640.0 / image.cols(), 640.0 / image.rows());
+        double dx = (640 - image.cols() * scale) / 2;
+        double dy = (640 - image.rows() * scale) / 2;
+
+        // 绘制结果
+        int c = 0;
+        for (int idx : indices_arr) {
+            Rect2d box = boxes2d.get(idx);
+            int classId = classIds.get(idx);
+            float conf = confidences.get(idx);
+
+            // 还原到原图坐标
+            double x = (box.x - dx) / scale;
+            double y = (box.y - dy) / scale;
+            double width = box.width / scale;
+            double height = box.height / scale;
+
+            // 确保坐标在图像范围内
+            x = Math.max(0, Math.min(x, image.cols() - 1));
+            y = Math.max(0, Math.min(y, image.rows() - 1));
+            width = Math.min(width, image.cols() - x);
+            height = Math.min(height, image.rows() - y);
+
+            System.out.println(String.format("最终检测框: %s %.3f [%.1f,%.1f,%.1f,%.1f]",
+                    classes.get(classId), conf, x, y, width, height));
+
+            Imgproc.rectangle(image,
+                    new Point(x, y),
+                    new Point(x + width, y + height),
+                    CommonColors(c), 2);
+
+            String label = classes.get(classId) + ": " + String.format("%.2f", conf);
+            Imgproc.putText(image, label, new Point(x, y - 10),
+                    Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(c), 2);
+            c++;
+        }
+
+        String savepath = uploadpath + File.separator + "temp" + File.separator;
+
+        if (StringUtils.isNotBlank(saveName)) {
+            savepath += saveName + ".jpg";
+        } else {
+            saveName = System.currentTimeMillis() + "";
+            savepath += saveName + ".jpg";
+        }
+
+        log.info("保存路径: {}", savepath);
+        Imgcodecs.imwrite(savepath, image);
+
+        Long b = System.currentTimeMillis();
+        log.info("总耗时: {}ms", (b - a));
+
+        return saveName + ".jpg";
+    }
+
+    // ==========新增letterbox预处理方法==========
+    private static Mat letterboxResize(Mat image, int targetWidth, int targetHeight) {
+        int originalWidth = image.cols();
+        int originalHeight = image.rows();
+
+        // 计算缩放比例
+        double scale = Math.min((double) targetWidth / originalWidth, (double) targetHeight / originalHeight);
+
+        // 计算新的尺寸
+        int newWidth = (int) (originalWidth * scale);
+        int newHeight = (int) (originalHeight * scale);
+
+        // 缩放图像
+        Mat resized = new Mat();
+        Imgproc.resize(image, resized, new Size(newWidth, newHeight));
+
+        // 创建目标尺寸的画布（灰色填充）
+        Mat letterboxed = new Mat(targetHeight, targetWidth, image.type(), new Scalar(114, 114, 114));
+
+        // 计算居中位置
+        int dx = (targetWidth - newWidth) / 2;
+        int dy = (targetHeight - newHeight) / 2;
+
+        // 将缩放后的图像复制到画布中心
+        Rect roi = new Rect(dx, dy, newWidth, newHeight);
+        Mat roiMat = new Mat(letterboxed, roi);
+        resized.copyTo(roiMat);
+
+        return letterboxed;
+    }
+    // Sigmoid函数
+    private static float sigmoid(float x) {
+        return (float) (1.0 / (1.0 + Math.exp(-x)));
     }
 
     /***
