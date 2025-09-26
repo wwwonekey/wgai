@@ -112,7 +112,6 @@
 ## 注明来意不然不通过（有问题isuess提问或者星球提问） 
 
 [//]: # (<img src="wg/chatpic.jpg" width="300px"  height="300px">)
-<img src="wg/qq.jpg" width="300px"  height="500px">
 <img src="wg/qqq.jpg" width="300px"  height="500px">
 <img src="wg/xingqiu.png" width="500px"  height="280px">
 
