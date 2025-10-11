@@ -68,9 +68,10 @@
 >
 >[<span style="color: red;">@github仓库地址 https://github.com/dromara/wgai </span>](https://github.com/dromara/wgai)
 >
+>[<span style="color: red;">@gitcode仓库地址 https://gitcode.com/dromara/wgai </span>] https://gitcode.com/dromara/wgai
 >
 ## 🏷️ 2. 启动前端
->  启动过程遇到什么问题可自行百度解决
+>  启动过程遇到什么问题可自行百度解决 前端在VUE分支！
 >
 >  第一步下载：npm  run install
 >
