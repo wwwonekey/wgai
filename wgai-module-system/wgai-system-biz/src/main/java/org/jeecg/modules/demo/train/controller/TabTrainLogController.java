@@ -1,14 +1,15 @@
 package org.jeecg.modules.demo.train.controller;
 
+import java.io.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang3.StringUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.util.oConvertUtils;
@@ -28,6 +29,7 @@ import org.jeecgframework.poi.excel.entity.ImportParams;
 import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -149,6 +151,8 @@ public class TabTrainLogController extends JeecgController<TabTrainLog, ITabTrai
 		}
 		return Result.OK(tabTrainLog);
 	}
+	 @Value("${jeecg.path.upload}")
+	 public String uplpadPath;
 	 @ApiOperation(value="训练结果-通过model_id查询", notes="训练结果-通过model_id查询")
 	 @GetMapping(value = "/queryByModelId")
 	 public Result<TabTrainLog> queryByModelId(@RequestParam(name="id",required=true) String id) {
@@ -158,7 +162,37 @@ public class TabTrainLogController extends JeecgController<TabTrainLog, ITabTrai
 		 if(tabTrainResult==null||tabTrainResult.size()<=0) {
 			 return Result.error("未找到对应数据");
 		 }
-		 return Result.OK(tabTrainResult.get(0));
+		 TabTrainLog tabTrainLog= tabTrainResult.get(0);
+		 if(StringUtils.isNotEmpty(tabTrainLog.getTrainLog())&&tabTrainLog.getTrainLog().length()<50){
+
+			 String path=uplpadPath+tabTrainLog.getTrainLog();
+			 log.info("当前日志地址：{}",path);
+			 File file = new File(path);
+
+			 if (file.exists() && file.isFile()) {
+				 try {
+					 // 读取文件内容（UTF-8）
+					 StringBuilder content = new StringBuilder();
+					 try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"))) {
+						 String line;
+						 while ((line = reader.readLine()) != null) {
+							 content.append(line).append("\n");
+						 }
+					 }
+
+					 // 设置到对象中
+					 tabTrainLog.setTrainLog(content.toString());
+
+				 } catch (IOException e) {
+					 e.printStackTrace();
+					 tabTrainLog.setCmdText("读取日志文件失败：" + e.getMessage());
+				 }
+			 } else {
+				 tabTrainLog.setCmdText("日志文件不存在：" + path);
+			 }
+
+		 }
+		 return Result.OK(tabTrainLog);
 	 }
     /**
     * 导出excel
