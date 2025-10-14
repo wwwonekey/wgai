@@ -1,8 +1,11 @@
 package org.jeecg.modules.tab.AIModel;
 
+import ai.onnxruntime.OrtEnvironment;
+import ai.onnxruntime.OrtSession;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import org.jeecg.common.aspect.annotation.Dict;
+import org.jeecg.modules.demo.video.entity.TabVideoUtil;
 import org.jeecg.modules.tab.entity.TabAiModel;
 import org.jeecgframework.poi.excel.annotation.Excel;
 import org.opencv.dnn.Net;
@@ -20,6 +23,9 @@ public class NetPush {
 
     Integer index;
     Net net;
+
+    OrtSession session;
+    OrtEnvironment env;
     String modelType;
 
     List<String> claseeNames;
@@ -40,7 +46,10 @@ public class NetPush {
     @ApiModelProperty(value = "是否跟随前置坐标")
     private Integer isFollow;
 
-
+    @Dict(dicCode = "push_static")
+    @Excel(name = "是否跟随前置放大", width = 15)
+    @ApiModelProperty(value = "是否跟随前置放大")
+    private Integer isBeforZoom;
 
     @Excel(name = "跟随最大距离", width = 15)
     @ApiModelProperty(value = "跟随最大距离")
@@ -56,5 +65,13 @@ public class NetPush {
     @Excel(name = "未识别到预警文本", width = 15)
     @ApiModelProperty(value = "未识别到预警文本")
     private String noDifText;
+
+
+    @ApiModelProperty(value = "是否开启区域识别")
+    Integer isBy;
+
+    TabVideoUtil tabVideoUtil;
+    @ApiModelProperty(value = "识别类型1.图像识别 2.姿态 3.多边形")
+    Integer difyType;
 
 }

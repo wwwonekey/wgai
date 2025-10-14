@@ -92,4 +92,18 @@ public class TabAiModel implements Serializable {
 	@Excel(name = "训练模型id", width = 15)
     @ApiModelProperty(value = "训练模型id")
     private String spareFive;
+
+
+    @ApiModelProperty(value = "识别内容")
+    @Dict(dicCode = "dify_type")
+    private Integer modelDify;
+
+    @ApiModelProperty(value = "识别方式")
+    @Dict(dicCode = "model_type")
+    private Integer modelDifyType;
+
+
+    @ApiModelProperty(value = "解码方式")
+    @Dict(dicCode = "jm_type")
+    private Integer modelJmType;
 }
