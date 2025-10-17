@@ -342,6 +342,10 @@ public class VideoReadPicOnnxNew implements Runnable {
                     break;
                 }
             } else {
+                if(validationPassed==null||validationPassed.getInfoList().size()<=0){
+                    log.warn("[前置内容为空,终止后续处理]");
+                    break;
+                }
                 executeDetectionOptimized(mat, beforePush, identifyTypeAll,validationPassed.getInfoList());
             }
         }

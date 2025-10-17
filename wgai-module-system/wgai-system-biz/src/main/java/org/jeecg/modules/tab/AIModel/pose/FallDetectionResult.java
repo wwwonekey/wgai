@@ -67,10 +67,10 @@ public class FallDetectionResult {
 
             // 判断阈值
             if (totalScore < 0.4) {
-                return new FallDetectionResult("跌倒", (float) (1.0 - totalScore),
+                return new FallDetectionResult("fall", (float) (1.0 - totalScore),
                         "身体水平，疑似跌倒", true);
             } else if (totalScore > 0.7) {
-                return new FallDetectionResult("未跌倒", (float) totalScore,
+                return new FallDetectionResult("stand", (float) totalScore,
                         "身体垂直，正常站立", true);
             } else {
                 return new FallDetectionResult("不确定", (float) totalScore,

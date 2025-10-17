@@ -567,7 +567,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
             //判断取流方式
             //
-            String imgPath="D:\\opt\\upFiles\\debug\\test\\end2025092510555799858.jpg";
+            String imgPath="D:\\opt\\upFiles\\debug\\end2025101511302360490.jpg";
             if(tabAiSubscriptionNew.getModelJmType()!=null&&tabAiSubscriptionNew.getModelJmType()==20){
                 identifyTypeNewOnnx identifyTypeNewOnnx=new  identifyTypeNewOnnx();
                 Mat mat = Imgcodecs.imread(imgPath);

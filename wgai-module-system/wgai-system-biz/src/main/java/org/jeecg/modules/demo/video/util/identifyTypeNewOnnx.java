@@ -358,11 +358,21 @@ public class identifyTypeNewOnnx {
 //                String label = "person: " + String.format("%.2f", conf);
 //                Imgproc.putText(image, label, new Point(x, y - 10),
 //                        Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(colorIdx), 2);
-                TabAiBase aiBase = VideoSendReadCfg.map.get("person");
-                aiBase.setChainName(fallResult.getStatus());
+                TabAiBase aiBase = VideoSendReadCfg.map.get(fallResult.getStatus());
+                if(aiBase!=null){
+                    if(StringUtils.isNotEmpty(aiBase.getSpaceThree())&&aiBase.getSpaceThree().equals("N")){
+                        log.warn("【当前不推送：{}】",fallResult.getStatus());
+                        continue;
+                    }
+                }else{
+                    aiBase = new TabAiBase();
+                    aiBase.setChainName(fallResult.getStatus());
+                    log.warn("【未找到当前基础库名称：{}】",fallResult.getStatus());
+
+                }
                 stats.accumulate(aiBase);
 
-                image=drawDetection(image, new BoundingBox(x, y, width, height),fallResult.getStatus(),conf,CommonColors(colorIdx));
+                image=drawDetection(image, new BoundingBox(x, y, width, height),aiBase.getChainName(),conf,CommonColors(colorIdx));
                 // 绘制关键点和骨骼连接
              //   drawPoseKeypoints(image, kpts, scale, dx, dy);
 
@@ -453,13 +463,13 @@ public class identifyTypeNewOnnx {
                                                               NetPush netPush) {
         List<FinalDetectionResult> finalResults = new ArrayList<>();
         float confThreshold = 0.35f;  // ROI内降低阈值
-        float nmsThreshold = 0.3f;
+        float nmsThreshold = 0.5f;
         log.info("当前需要放大的数量：{}", retureBoxInfos.size());
         for (int roiIndex = 0; roiIndex < retureBoxInfos.size(); roiIndex++) {
             retureBoxInfo personBox = retureBoxInfos.get(roiIndex);
             // ✅ 跳过太小的 ROI
-            if (personBox.getWidth() < 50 || personBox.getHeight() < 50) {
-                log.debug("ROI[{}]太小，跳过", roiIndex);
+            if (personBox.getWidth() < 50 && personBox .getHeight() < 50) {
+                log.warn("ROI[{}]太小，跳过{}x{}", roiIndex,personBox.getWidth(), personBox.getHeight() );
                 continue;
             }
             log.info("处理ROI[{}]: x={}, y={}, w={}, h={}",
@@ -601,19 +611,17 @@ public class identifyTypeNewOnnx {
         int boxHeight = (int) personBox.getHeight();
 
         // 策略1：如果人体框本身很大（>400px），直接裁剪，只加小padding
-        if (boxWidth >= 400 || boxHeight >= 400) {
+        if (boxWidth >= 200 && boxHeight >= 200) {
             int padding = 30;  // 固定30像素padding
             return cropWithPadding(personBox, image, padding);
-        }
-
-        // 策略2：如果人体框中等大小（150-400px），加任务相关的padding
-        if (boxWidth >= 150 || boxHeight >= 150) {
+        }else{
             int padding = getTaskSpecificPadding(netPush);
+            log.info("扩展范围{}",padding);
             return cropWithPadding(personBox, image, padding);
         }
 
         // 策略3：如果人体框很小（<150px），裁剪固定大小的区域
-        return cropFixedSizeRegion(personBox, image, 640);
+   //     return cropFixedSizeRegion(personBox, image, 640);
     }
 
 
@@ -662,19 +670,20 @@ public class identifyTypeNewOnnx {
      * 根据任务类型返回padding大小
      */
     private int getTaskSpecificPadding(NetPush netPush) {
-        String modelName = netPush.getTabAiModel().getAiName().toLowerCase();
-
-        if (modelName.contains("smoking") || modelName.contains("抽烟")) {
-            return 100;  // 抽烟需要包含手到嘴的区域
-        } else if (modelName.contains("helmet") || modelName.contains("安全帽")) {
-            return 40;   // 安全帽只需头部周围
-        } else if (modelName.contains("phone") || modelName.contains("打电话")) {
-            return 80;
-        } else if (modelName.contains("mask") || modelName.contains("口罩")) {
-            return 50;
-        } else {
-            return 60;   // 默认
-        }
+//        String modelName = netPush.getTabAiModel().getAiName().toLowerCase();
+//
+//        if (modelName.contains("smoking") || modelName.contains("抽烟")) {
+//            return netPush.getFollowPosition();  // 抽烟需要包含手到嘴的区域
+//        } else if (modelName.contains("helmet") || modelName.contains("安全帽")) {
+//            return 40;   // 安全帽只需头部周围
+//        } else if (modelName.contains("phone") || modelName.contains("打电话")) {
+//            return 80;
+//        } else if (modelName.contains("mask") || modelName.contains("口罩")) {
+//            return 50;
+//        } else {
+//            return 60;   // 默认
+//        }
+        return netPush.getFollowPosition();  // 抽烟需要包含手到嘴的区域
     }
 
     /**
@@ -964,7 +973,28 @@ public class identifyTypeNewOnnx {
             if (!debugDir.exists()) {
                 debugDir.mkdirs();
             }
-
+            long count = Files.list(Paths.get(debugPath)).filter(Files::isRegularFile).count();
+            if(count>50000){
+                log.info("裁剪图片大于50000就删除 以免磁盘满");
+                //删除所有重新存储
+                new Thread(() -> {
+                    try (Stream<Path> paths = Files.list(Paths.get(debugPath))) {
+                        paths.filter(Files::isRegularFile)
+                                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                                .limit(5000)
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+                return;
+            }
             String filename = debugPath + "roi_" + roiIndex + "_" +
                     System.currentTimeMillis() + ".jpg";
             Imgcodecs.imwrite(filename, roiMat);
@@ -1078,7 +1108,7 @@ public class identifyTypeNewOnnx {
         log.info("NMS前检测框数量: {}", detectionResult.boxes2d.size());
 
         // ========== 6. NMS非极大值抑制 ==========
-        int[] nmsIndices = performNMS(detectionResult, 0.25f, 0.35f);
+        int[] nmsIndices = performNMS(detectionResult, 0.4f, 0.45f);
         if (nmsIndices.length > 50) {
             setErrorImg(image, "maxIndex");
             log.warn("NMS后检测框数量过多: {}, 超过阈值50", nmsIndices.length);
@@ -1554,7 +1584,7 @@ public class identifyTypeNewOnnx {
         long[] shape = new long[]{1, 3, 640, 640};
 
         DetectionResult result = new DetectionResult();
-        float confThreshold = 0.3f;
+        float confThreshold = 0.45f;
 
         try (OnnxTensor inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), shape)) {
             Map<String, OnnxTensor> inputs = Collections.singletonMap(

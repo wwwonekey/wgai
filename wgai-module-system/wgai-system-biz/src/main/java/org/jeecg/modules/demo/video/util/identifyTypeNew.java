@@ -387,8 +387,8 @@ public class identifyTypeNew {
             net.forward(result, outBlobNames);
 
             // 处理检测结果
-            float confThreshold = 0.35f;
-            float nmsThreshold = 0.3f;
+            float confThreshold = 0.4f;
+            float nmsThreshold = 0.4f;
             List<Rect2d> boxes2d = new ArrayList<>();
             List<Float> confidences = new ArrayList<>();
             List<Integer> classIds = new ArrayList<>();
@@ -1597,7 +1597,7 @@ public class identifyTypeNew {
             }
 
             Scalar color=CommonColors(c);
-            TabAiBase aiBase = VideoSendReadCfg.map.get("person");
+            TabAiBase aiBase = VideoSendReadCfg.map.get(fallResult.getStatus());
             aiBase.setChainName(fallResult.getStatus());
             if (aiBase == null) {
                 aiBase = new TabAiBase();
@@ -2121,7 +2121,10 @@ public class identifyTypeNew {
             // 2. 裁剪ROI
             Mat roiMat = new Mat(image, expandedROI);
             Size originalROISize = roiMat.size();
-
+            // ✅ 保存调试图（可选）
+            if (netPush.getIsBeforZoom() == 0) {
+                saveROIForDebug(roiMat, roiIndex, netPush.getUploadPath());
+            }
             // 3. 放大到640x640（关键：让小目标变大）
             Mat resizedROI = letterboxResize(roiMat, 640, 640);
 
@@ -2209,7 +2212,46 @@ public class identifyTypeNew {
     }
 
 
-
+    /**
+     * 保存ROI用于调试
+     */
+    private void saveROIForDebug(Mat roiMat, int roiIndex, String uploadPath) {
+        try {
+            String debugPath = uploadPath + File.separator + "debug" + File.separator;
+            File debugDir = new File(debugPath);
+            if (!debugDir.exists()) {
+                debugDir.mkdirs();
+            }
+            long count = Files.list(Paths.get(debugPath)).filter(Files::isRegularFile).count();
+            if(count>50000){
+                log.info("裁剪图片大于50000就删除 以免磁盘满");
+                //删除所有重新存储
+                new Thread(() -> {
+                    try (Stream<Path> paths = Files.list(Paths.get(debugPath))) {
+                        paths.filter(Files::isRegularFile)
+                                .sorted(Comparator.comparingLong(p -> p.toFile().lastModified()))
+                                .limit(5000)
+                                .forEach(path -> {
+                                    try {
+                                        Files.deleteIfExists(path);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                });
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }).start();
+                return;
+            }
+            String filename = debugPath + "roi_" + roiIndex + "_" +
+                    System.currentTimeMillis() + ".jpg";
+            Imgcodecs.imwrite(filename, roiMat);
+            log.debug("ROI[{}]已保存至: {}", roiIndex, filename);
+        } catch (Exception ex) {
+            log.error("保存ROI失败", ex);
+        }
+    }
     /**
      * 扩展ROI区域
      */
