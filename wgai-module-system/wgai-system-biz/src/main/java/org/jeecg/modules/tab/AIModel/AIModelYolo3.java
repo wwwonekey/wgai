@@ -1330,9 +1330,9 @@ public class AIModelYolo3 {
         OrtEnvironment env = OrtEnvironment.getEnvironment();
         OrtSession.SessionOptions options = new OrtSession.SessionOptions();
         if (useGpu) {
-            options.addCUDA(); // 使用 GPU
+            options.addCUDA();
         } else {
-            options.addCPU(true);  // 强制 CPU
+            options.addCPU(true);
         }
 
         try (OrtSession session = env.createSession(uploadpath + File.separator + weight, options)) {
@@ -1343,8 +1343,8 @@ public class AIModelYolo3 {
                     session.getInputNames().iterator().next(), inputTensor);
 
             // 6. 推理并解析结果
-            float confThreshold = 0.35f;
-            float nmsThreshold = 0.2f;
+            float confThreshold = 0.45f;
+            float nmsThreshold = 0.35f;
 
             List<Rect2d> boxes2d = new ArrayList<>();
             List<Float> confidences = new ArrayList<>();
@@ -1365,46 +1365,184 @@ public class AIModelYolo3 {
                     if (rawOutput instanceof float[][][]) {
                         float[][][] batch = (float[][][]) rawOutput;
 
-                        // 判断是否为 YOLOv11 Pose 格式 [1, 56, 8400]
-                        // 56 = 4(bbox) + 1(conf) + 51(17个关键点*3)
-                        boolean isPoseFormat = tensorShape.length == 3 &&
-                                tensorShape[1] == 56 &&
-                                tensorShape[2] > 1000;
+                        // 🔍 添加调试信息
+                        System.out.println("实际数组维度: [" + batch.length + "]["
+                                + batch[0].length + "][" + batch[0][0].length + "]");
 
-                        if (isPoseFormat) {
-                            System.out.println("检测到YOLOv11 Pose格式");
+                        // ✅ 根据实际维度判断数据格式
+                        int dim0 = batch.length;        // 通常是 1
+                        int dim1 = batch[0].length;     // 可能是 56 或 8400
+                        int dim2 = batch[0][0].length;  // 可能是 8400 或 56
+                        int debugCount = 0; // 用于控制调试输出数量
 
-                            for (float[][] detections : batch) {
-                                int numDetections = (int) tensorShape[2]; // 8400
+                        if (dim1 == 56 && dim2 > 1000) {
+                            System.out.println("✅ 检测到格式: [batch][features][detections]");
+                            float[][] detections = batch[0];
 
-                                for (int i = 0; i < numDetections; i++) {
-                                    // 解析边界框: [x, y, w, h]
-                                    float centerX = detections[0][i];
-                                    float centerY = detections[1][i];
-                                    float width = detections[2][i];
-                                    float height = detections[3][i];
-                                    float confidence = detections[4][i];
 
-                                    if (confidence > confThreshold) {
-                                        float left = centerX - width / 2;
-                                        float top = centerY - height / 2;
+                            for (int i = 0; i < dim2; i++) {
+                                float centerX = detections[0][i];
+                                float centerY = detections[1][i];
+                                float width = detections[2][i];
+                                float height = detections[3][i];
+                                float confidence = detections[4][i];
 
-                                        // 提取关键点数据 (17个关键点，每个3个值：x, y, visibility)
-                                        float[] kpts = new float[51]; // 17 * 3
-                                        for (int j = 0; j < 51; j++) {
-                                            kpts[j] = detections[5 + j][i];
+                                if (confidence > confThreshold) {
+                                    float left = centerX - width / 2;
+                                    float top = centerY - height / 2;
+
+                                    // 提取关键点数据
+                                    float[] kpts = new float[51];
+                                    for (int j = 0; j < 51; j++) {
+                                        kpts[j] = detections[5 + j][i];
+                                    }
+
+                                    // 🔍 调试输出
+                                    if (debugCount < 3) {
+                                        System.out.println(String.format("\n📊 检测框索引=%d, 置信度=%.4f", i, confidence));
+                                        System.out.println("  前5个关键点数据:");
+                                        for (int k = 0; k < 5; k++) {
+                                            float kx = kpts[k * 3];
+                                            float ky = kpts[k * 3 + 1];
+                                            float visibility = kpts[k * 3 + 2];
+                                            System.out.println(String.format("    关键点%d: x=%.2f, y=%.2f, vis=%.4f",
+                                                    k, kx, ky, visibility));
                                         }
+                                    }
 
-                                        classIds.add(0); // 人体检测通常只有一个类别
+                                    // ✅ 验证关键点有效性
+                                    int validCoordCount = 0;
+                                    int highVisibilityCount = 0;
+                                    float minX = Float.MAX_VALUE, maxX = Float.MIN_VALUE;
+                                    float minY = Float.MAX_VALUE, maxY = Float.MIN_VALUE;
+
+                                    for (int k = 0; k < 17; k++) {
+                                        float kx = kpts[k * 3];
+                                        float ky = kpts[k * 3 + 1];
+                                        float visibility = kpts[k * 3 + 2];
+
+                                        boolean coordsInRange = (kx >= 0 && kx <= 640 && ky >= 0 && ky <= 640);
+                                        boolean notZero = (kx > 0.1 || ky > 0.1);
+
+                                        if (coordsInRange && notZero) {
+                                            validCoordCount++;
+
+                                            if (visibility > 0.5) {
+                                                highVisibilityCount++;
+                                                // 只统计高可见性的关键点范围
+                                                minX = Math.min(minX, kx);
+                                                maxX = Math.max(maxX, kx);
+                                                minY = Math.min(minY, ky);
+                                                maxY = Math.max(maxY, ky);
+                                            }
+                                        }
+                                    }
+
+                                    // ⭐ 计算关键点分布范围
+                                    float keypointWidth = (maxX == Float.MIN_VALUE) ? 0 : (maxX - minX);
+                                    float keypointHeight = (maxY == Float.MIN_VALUE) ? 0 : (maxY - minY);
+
+                                    // 计算关键点范围与边界框的比例
+                                    float widthRatio = (width > 0) ? (keypointWidth / width) : 0;
+                                    float heightRatio = (height > 0) ? (keypointHeight / height) : 0;
+
+                                    if (debugCount < 3) {
+                                        System.out.println(String.format("  统计: 有效坐标=%d/17, 高可见性=%d/17",
+                                                validCoordCount, highVisibilityCount));
+                                        System.out.println(String.format("  边界框: 宽=%.1f, 高=%.1f", width, height));
+                                        System.out.println(String.format("  关键点范围: 宽=%.1f, 高=%.1f", keypointWidth, keypointHeight));
+                                        System.out.println(String.format("  覆盖率: 宽度%.1f%%, 高度%.1f%%", widthRatio * 100, heightRatio * 100));
+                                        debugCount++;
+                                    }
+
+                                    // ⭐⭐⭐ 关键过滤条件 ⭐⭐⭐
+                                    boolean hasValidKeypoints = false;
+
+                                    if (highVisibilityCount >= 5) {
+                                        // 条件1: 关键点必须有合理的分布范围
+                                        boolean hasReasonableSpread = (keypointWidth > 50 && keypointHeight > 100);
+
+                                        // 条件2: 关键点范围应该覆盖边界框的大部分区域
+                                        // 真实人体的关键点应该至少覆盖边界框50%的宽度和60%的高度
+                                        boolean coversEnoughArea = (widthRatio > 0.5 && heightRatio > 0.6);
+
+                                        hasValidKeypoints = hasReasonableSpread && coversEnoughArea;
+
+                                        if (debugCount <= 3) {
+                                            System.out.println(String.format("  验证结果: 合理分布=%s, 覆盖充分=%s, 最终=%s",
+                                                    hasReasonableSpread, coversEnoughArea, hasValidKeypoints));
+                                        }
+                                    } else {
+                                        if (debugCount <= 3) {
+                                            System.out.println(String.format("  验证结果: 高可见性关键点不足(%d<5)", highVisibilityCount));
+                                        }
+                                    }
+
+                                    if (hasValidKeypoints) {
+                                        classIds.add(0);
+                                        confidences.add(confidence);
+                                        boxes2d.add(new Rect2d(left, top, width, height));
+                                        keypoints.add(kpts);
+
+                                        log.info("✅ 检测到有效人体: 置信度={}, 坐标=({},{},{},{}), 关键点覆盖={}x{}",
+                                                confidence, left, top, width, height,
+                                                String.format("%.0f%%", widthRatio * 100),
+                                                String.format("%.0f%%", heightRatio * 100));
+                                    } else {
+                                        if (debugCount <= 3) {
+                                            System.out.println(String.format("❌ 过滤掉检测框[%d]: 关键点分布异常", i));
+                                        }
+                                    }
+                                }
+                            }
+                        } else if (dim1 > 1000 && dim2 == 56) {
+                            // 格式: [1][8400][56] - 检测在前
+                            System.out.println("⚠️ 检测到格式: [batch][detections][features]");
+
+                            for (int i = 0; i < dim1; i++) {
+                                float[] detection = batch[0][i];  // [56]
+
+                                float centerX = detection[0];
+                                float centerY = detection[1];
+                                float width = detection[2];
+                                float height = detection[3];
+                                float confidence = detection[4];
+
+                                if (confidence > confThreshold) {
+                                    float left = centerX - width / 2;
+                                    float top = centerY - height / 2;
+
+                                    // 提取关键点
+                                    float[] kpts = new float[51];
+                                    System.arraycopy(detection, 5, kpts, 0, 51);
+
+                                    // 🔍 验证关键点有效性
+                                    boolean hasValidKeypoints = false;
+                                    for (int k = 0; k < 17; k++) {
+                                        float kx = kpts[k * 3];
+                                        float ky = kpts[k * 3 + 1];
+                                        float visibility = kpts[k * 3 + 2];
+                                        if (visibility > 0.3 && kx > 0 && ky > 0) {
+                                            hasValidKeypoints = true;
+                                            break;
+                                        }
+                                    }
+
+                                    if (hasValidKeypoints) {
+                                        classIds.add(0);
                                         confidences.add(confidence);
                                         boxes2d.add(new Rect2d(left, top, width, height));
                                         keypoints.add(kpts);
 
                                         log.info("检测到人体: 置信度={}, 坐标=({},{},{},{})",
                                                 confidence, left, top, width, height);
+                                    } else {
+                                        System.out.println("⚠️ 跳过无效检测 (置信度=" + confidence + "): 无有效关键点");
                                     }
                                 }
                             }
+                        } else {
+                            System.err.println("❌ 未知的输出格式: [" + dim0 + "][" + dim1 + "][" + dim2 + "]");
                         }
                     }
                 }
@@ -1412,7 +1550,11 @@ public class AIModelYolo3 {
 
             System.out.println("NMS前检测框数量: " + boxes2d.size());
 
-           // 7. 应用非极大值抑制
+            if (boxes2d.size() <= 0) {
+                return "未检测到";
+            }
+
+            // 7. 应用非极大值抑制
             MatOfRect2d boxesMat = new MatOfRect2d();
             boxesMat.fromList(boxes2d);
             MatOfFloat confidencesMat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));

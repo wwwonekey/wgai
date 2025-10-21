@@ -20,6 +20,8 @@ import org.jeecg.modules.demo.video.mapper.TabAiVideoSettingMapper;
 import org.jeecg.modules.demo.video.service.ITabAiSubscriptionNewService;
 
 import org.jeecg.modules.demo.video.util.*;
+import org.jeecg.modules.demo.video.util.batch.PerformanceMonitor;
+import org.jeecg.modules.demo.video.util.batch.VideoReadPicOnnxOptimized;
 import org.jeecg.modules.demo.video.util.onnx.VideoReadPicNewThreeTwoOnnx;
 import org.jeecg.modules.demo.video.util.onnx.VideoReadPicOnnxNew;
 import org.jeecg.modules.demo.video.util.reture.retureBoxInfo;
@@ -38,6 +40,7 @@ import org.springframework.stereotype.Service;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 
+import javax.annotation.PostConstruct;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -77,7 +80,12 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
     private String upLoadPath;
     @Value("${cameraNum}")
     private Integer cameraNum;
-
+    @PostConstruct
+    public void init() {
+        // 启动性能监控
+        PerformanceMonitor.getInstance().startMonitoring();
+        log.info("[性能监控已启动]");
+    }
     @Override
     public void startAi(TabAiSubscriptionNew tabAiSubscriptionNew)  {
         try {
@@ -244,8 +252,8 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                     Timer timer = new Timer();
                     timer.schedule(new TimerTask() {
                         public void run() {
-                            executor.submit(new VideoReadPicNewThreeTwoOnnx(tabAiSubscriptionNew, redisTemplate));
-
+                            //executor.submit(new VideoReadPicNewThreeTwoOnnx(tabAiSubscriptionNew, redisTemplate));
+                            executor.submit(new VideoReadPicOnnxOptimized(tabAiSubscriptionNew, redisTemplate));
                         }
                     },  30000); // 30秒间隔
                 }
@@ -567,7 +575,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
             //判断取流方式
             //
-            String imgPath="D:\\opt\\upFiles\\debug\\end2025101511302360490.jpg";
+            String imgPath="F:\\360se6\\roi_1_1760316473406_1760316525066.jpg";
             if(tabAiSubscriptionNew.getModelJmType()!=null&&tabAiSubscriptionNew.getModelJmType()==20){
                 identifyTypeNewOnnx identifyTypeNewOnnx=new  identifyTypeNewOnnx();
                 Mat mat = Imgcodecs.imread(imgPath);
@@ -579,7 +587,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                         if(a==0){
 
                          validationPassed= identifyTypeNewOnnx.detectObjectsV5Onnx(tabAiSubscriptionNew, mat, netPush,redisTemplate);
-                        a++;
+                         a++;
                         }else{
                             if(netPush.getDifyType()==2){
                                 identifyTypeNewOnnx.detectObjectsDifyOnnxV5Pose(tabAiSubscriptionNew, mat, netPush, redisTemplate,validationPassed.getInfoList());
@@ -594,12 +602,12 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                     }
                 } else {
                     if(NetPushList.get(0).getDifyType()==2){
-                        identifyTypeNewOnnx.detectObjectsDifyOnnxV5Pose(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,validationPassed.getInfoList());
+                        identifyTypeNewOnnx.detectObjectsDifyOnnxV5Pose(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,null);
                     }else{
                         if(NetPushList.get(0).getIsBeforZoom()==0){//开启区域放大
-                            identifyTypeNewOnnx.detectObjectsDifyOnnxV5WithROI(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,validationPassed.getInfoList());
+                            identifyTypeNewOnnx.detectObjectsDifyOnnxV5WithROI(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,null);
                         }else{
-                            identifyTypeNewOnnx.detectObjectsDifyOnnxV5(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,validationPassed.getInfoList());
+                            identifyTypeNewOnnx.detectObjectsDifyOnnxV5(tabAiSubscriptionNew, mat, NetPushList.get(0), redisTemplate,null);
                         }
                     }
                 }

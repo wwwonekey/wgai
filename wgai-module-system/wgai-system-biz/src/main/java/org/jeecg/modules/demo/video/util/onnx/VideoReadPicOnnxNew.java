@@ -16,6 +16,7 @@ import org.opencv.dnn.Net;
 import org.springframework.data.redis.core.RedisTemplate;
 
 import java.awt.image.BufferedImage;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,6 +109,20 @@ public class VideoReadPicOnnxNew implements Runnable {
                 if (!isStreamActive()) {
                     log.warn("[主动停止推送]{}", tabAiSubscriptionNew.getName());
                     break;
+                }
+
+                if(tabAiSubscriptionNew.getDifyStartEnd()!=null&&tabAiSubscriptionNew.getDifyStartTime()!=null){
+                    int startHour = tabAiSubscriptionNew.getDifyStartTime(); // 开始小时
+                    int endHour = tabAiSubscriptionNew.getDifyStartEnd();    // 结束小时
+
+                    LocalTime now = LocalTime.now();  // 当前时间（时分秒）
+                    LocalTime start = LocalTime.of(startHour, 0);
+                    LocalTime end = LocalTime.of(endHour, 0);
+
+                    if (now.isBefore(start) || now.isAfter(end)) {
+                        log.info("当前时间不在有效时段 ({}~{})，跳过", startHour, endHour);
+                        continue;
+                    }
                 }
 
                 frame = grabber.grabImage();

@@ -161,6 +161,12 @@ public class TabAiSubscriptionNew implements Serializable {
     @Dict(dicCode = "model_type")
     private Integer modelJmType;
 
+    @ApiModelProperty(value = "推送开始时间")
+    private Integer difyStartEnd;
+
+    @ApiModelProperty(value = "推送结束时间")
+    private Integer difyStartTime;
+
     @TableField(exist = false)
     TabVideoUtil tabVideoUtil;
 
