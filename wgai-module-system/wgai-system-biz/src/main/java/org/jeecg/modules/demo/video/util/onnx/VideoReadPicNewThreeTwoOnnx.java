@@ -258,11 +258,11 @@ public class VideoReadPicNewThreeTwoOnnx implements Runnable {
                 }
 
                 // 处理前最后内存检查
-                if (!checkMemoryBeforeProcessing()) {
-                    frame.close();
-                    droppedFrames.incrementAndGet();
-                    continue;
-                }
+//                if (!checkMemoryBeforeProcessing()) {
+//                    frame.close();
+//                    droppedFrames.incrementAndGet();
+//                    continue;
+//                }
 
                 // 异步处理帧 - 使用全局线程池
                 processFrameAsyncOptimized(frame, netPushList, identifyTypeAll);
@@ -461,7 +461,7 @@ public class VideoReadPicNewThreeTwoOnnx implements Runnable {
                 // 处理推理 - 保持原有逻辑
                 long inferenceStart = System.currentTimeMillis();
                 for (NetPush netPush : netPushList) {
-                    if (forceShutdown.get() || !checkMemoryBeforeProcessing()) {
+                    if (forceShutdown.get() ) {//|| !checkMemoryBeforeProcessing()
                         break;
                     }
 
@@ -658,7 +658,7 @@ public class VideoReadPicNewThreeTwoOnnx implements Runnable {
 
         retureBoxInfo validationPassed = null;
         for (int i = 0; i < before.size(); i++) {
-            if (forceShutdown.get() || !checkMemoryBeforeProcessing()) {
+            if (forceShutdown.get() ) {//|| !checkMemoryBeforeProcessing()
                 break;
             }
 
@@ -872,10 +872,14 @@ public class VideoReadPicNewThreeTwoOnnx implements Runnable {
      * 创建优化的视频采集器
      */
     public FFmpegFrameGrabber createOptimizedGrabber() throws Exception {
+        log.info("开始探测流{}",tabAiSubscriptionNew.getBeginEventTypes());
         // 第一步：探测流信息
         FFmpegFrameGrabber probe = new FFmpegFrameGrabber(tabAiSubscriptionNew.getBeginEventTypes());
         probe.setOption("rtsp_transport", "tcp");
-        probe.setOption("stimeout", "5000000");
+        probe.setOption("rw_timeout", "5000000"); // 5秒超时
+        probe.setOption("stimeout", "5000000");   // 兼容性保留
+        probe.setOption("max_delay", "5000000"); // 最大等待延迟
+        probe.setOption("buffer_size", "1024000");
         probe.start();
         String codecName = probe.getVideoCodecName();
         int codecId = probe.getVideoCodec();

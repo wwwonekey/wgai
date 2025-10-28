@@ -815,7 +815,7 @@ public class BatchOnnxInference {
                     push.setVideo(recordVideo);
                     // 获取 pushInfo 的路径部分
 
-                    JSONObject ob = RestUtil.post("http://127.0.0.1:9998/jeecg-boot/video/tabAiWarning/addPush", (JSONObject) JSONObject.toJSON(push));
+                    JSONObject ob = RestUtil.post("http://127.0.0.1:9998/wgai/video/tabAiWarning/addPush", (JSONObject) JSONObject.toJSON(push));
 
                     log.info("返回内容：" + ob);
                 }

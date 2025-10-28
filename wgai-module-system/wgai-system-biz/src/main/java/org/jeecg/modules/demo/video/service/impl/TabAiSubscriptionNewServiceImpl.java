@@ -258,7 +258,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
                     timer.schedule(new TimerTask() {
                         public void run() {
                             //executor.submit(new VideoReadPicNewThreeTwoOnnx(tabAiSubscriptionNew, redisTemplate));
-                            executor.submit(new VideoReadPicOnnxOptimized(tabAiSubscriptionNew, redisTemplate));
+                            executor.submit(new VideoReadPicNewThreeTwoOnnx(tabAiSubscriptionNew, redisTemplate));
                         }
                     },  30000); // 30秒间隔
                 }else{
@@ -587,7 +587,7 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
             //判断取流方式
             //
-            String imgPath="F:\\360se6\\end2025101921254037489.jpg";
+            String imgPath="F:\\360se6\\end2025102411281145662.jpg";
             if(tabAiSubscriptionNew.getModelJmType()!=null&&tabAiSubscriptionNew.getModelJmType()==20){
                 identifyTypeNewOnnx identifyTypeNewOnnx=new  identifyTypeNewOnnx();
                 Mat mat = Imgcodecs.imread(imgPath);
