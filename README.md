@@ -34,7 +34,17 @@
 >4. ✅不需要额外开发无缝接入第三方平台、分开部署可一台服务器N台边缘盒子 
 >5. ✅可自主离线化部署平台标注训练解放双手一件训练
 >6. ✅无商业版本也不会开商业版本！为往胜继绝学
-
+## ⁉️ 演示视频
+> 内置ORC识别,图片识别,视频识别,训练模型,训练自己的数字人以前别人卡我们脖子当老大，现在我要自己当老大别人请求我！
+>
+> 演示视频1：[<span style="color: blue;">@如何标注训练自己的识别模型 </span>](https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4)
+>
+> 演示视频2：[<span style="color: blue;">@训练完成如何使用</span>](https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+>
+> 演示视频3：[<span style="color: blue;">@数字人结果视频/图片变成动态数字人视频/设置自己自己的文本与音色 </span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
+>
+> 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
+>
 
 
 ## 🔆测试地址&账户
@@ -98,17 +108,7 @@
 > <img src="wg/xingqiu.png" width="500px"  height="280px">
 
 
-# ⁉️ 他能做什么？
-> 内置ORC识别,图片识别,视频识别,训练模型,训练自己的数字人以前别人卡我们脖子当老大，现在我要自己当老大别人请求我！
->
-> 演示视频1：[<span style="color: red;">@如何标注训练自己的识别模型 https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4 </span>](https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4)
->
-> 演示视频2：[<span style="color: red;">@训练完成如何使用 https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9</span>](https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
->
-> 演示视频3：[<span style="color: red;">数字人结果视频/图片变成动态数字人视频/设置自己自己的文本与音色 https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4 </span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
->
-> 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
->
+
 
 ## 注明来意不然不通过（有问题isuess提问或者星球提问） 
 
