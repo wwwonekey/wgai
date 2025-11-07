@@ -41,15 +41,15 @@
 >
 > 演示视频2：[<span style="color: blue;">@训练完成如何使用</span>](https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
 >
-> 演示视频2：[<span style="color: blue;">@OCR在线识别与车牌识别</span>](https://www.bilibili.com/video/BV1Dn2wBzEHg?spm_id_from=333.788.recommend_more_video.1&trackid=web_related_0.router-related-2206146-btjvp.1762476219409.71&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+> 演示视频3：[<span style="color: blue;">@OCR在线识别与车牌识别</span>](https://www.bilibili.com/video/BV1Dn2wBzEHg?spm_id_from=333.788.recommend_more_video.1&trackid=web_related_0.router-related-2206146-btjvp.1762476219409.71&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
 >
-> 演示视频2：[<span style="color: blue;">@语音在线识别与配置</span>](https://www.bilibili.com/video/BV1Dn2wBzENj?spm_id_from=333.788.recommend_more_video.-1&trackid=web_related_0.router-related-2206146-8k2m6.1762476197767.878&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+> 演示视频4：[<span style="color: blue;">@语音在线识别与配置</span>](https://www.bilibili.com/video/BV1Dn2wBzENj?spm_id_from=333.788.recommend_more_video.-1&trackid=web_related_0.router-related-2206146-8k2m6.1762476197767.878&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
 >
-> 演示视频2：[<span style="color: blue;">@矩形、多边形、控制点在线标注</span>](https://www.bilibili.com/video/BV1hn2wB6EEN?spm_id_from=333.788.recommend_more_video.0&trackid=web_related_0.router-related-2206146-52fdn.1762476232980.626&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+> 演示视频5：[<span style="color: blue;">@矩形、多边形、控制点在线标注</span>](https://www.bilibili.com/video/BV1hn2wB6EEN?spm_id_from=333.788.recommend_more_video.0&trackid=web_related_0.router-related-2206146-52fdn.1762476232980.626&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
 >
-> 演示视频2：[<span style="color: blue;">@实时视频分析与预警推送</span>](https://www.bilibili.com/video/BV1gn2wB6EQN/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
+> 演示视频6：[<span style="color: blue;">@实时视频分析与预警推送</span>](https://www.bilibili.com/video/BV1gn2wB6EQN/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
 >
-> 演示视频3：[<span style="color: blue;">@数字人结果视频/图片变成动态数字人视频/设置自己自己的文本与音色 </span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
+> 演示视频7：[<span style="color: blue;">@数字人结果视频/图片变成动态数字人视频/设置自己自己的文本与音色 </span>](https://img.nj-kj.com/zhangwei_1745562613859_1745465917540_1745567724504.mp4)
 >
 > 其他演示视频正在录制 语音识别、OCR识别、数字人训练、接入其他语言大模型等其他识别模型
 >
