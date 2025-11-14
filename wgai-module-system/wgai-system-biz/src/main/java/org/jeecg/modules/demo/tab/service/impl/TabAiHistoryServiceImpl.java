@@ -1005,6 +1005,13 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
 
                     break;
                 }
+                case "20":{
+                    log.info("【ONNX】{}",tabAiModelBund.getSpaceTwo());
+
+
+
+                    break;
+                }
             }
 
 
