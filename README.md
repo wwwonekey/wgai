@@ -133,7 +133,7 @@
 <img src="wg/zfb.jpg" width="300px"  height="300px">
 
 ### 捐赠名单按捐赠顺序前后鸣谢
-@喜
+@喜  |  @小白
 
 
 
