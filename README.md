@@ -123,7 +123,7 @@
 
 [//]: # (<img src="wg/chatpic.jpg" width="300px"  height="300px">)
 <img src="wg/qqq.jpg" width="300px"  height="500px">
-<img src="wg/1762480728807.png" width="400px"  height="500px">
+<img src="wg/weixinqun.jpg" width="400px"  height="500px">
 
 [//]: # (<img src="wg/xingqiu.png" width="500px"  height="280px">)
 
@@ -145,7 +145,7 @@
 ### 在线训练&标注内容已经上线开源 支持windwos/linux 国产化服务器部署
 #### 模型列表
 ![audio2](wg/moxingkapian.jpg)
-#### 在线标注
+#### 在线标注buq
 ![audio1](wg/zaixianbiaozhu.jpg)
 #### 训练结果
 ![audio1](wg/xunlianjieguo.jpg)
