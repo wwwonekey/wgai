@@ -59,13 +59,31 @@ public class TabAiModelController extends JeecgController<TabAiModel, ITabAiMode
 													@RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
 													@RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
 													HttpServletRequest req) {
+
+
 		 QueryWrapper<TabAiModel> queryWrapper = QueryGenerator.initQueryWrapper(tabAiModel, req.getParameterMap());
+		 queryWrapper.ne("model_dify","20").or()
+				 .isNull("model_dify");;
 		 Page<TabAiModel> page = new Page<TabAiModel>(pageNo, pageSize);
 		 IPage<TabAiModel> pageList = tabAiModelService.page(page, queryWrapper);
 		 return Result.OK(pageList);
 	 }
 
 
+	 @ApiOperation(value = "AI模型-分页列表查询", notes = "AI模型-分页列表查询")
+	 @GetMapping(value = "/listface")
+	 public Result<IPage<TabAiModel>> queryPageListFace(TabAiModel tabAiModel,
+													@RequestParam(name = "pageNo", defaultValue = "1") Integer pageNo,
+													@RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
+													HttpServletRequest req) {
+
+
+		 QueryWrapper<TabAiModel> queryWrapper = QueryGenerator.initQueryWrapper(tabAiModel, req.getParameterMap());
+		 queryWrapper.eq("model_dify","20");
+		 Page<TabAiModel> page = new Page<TabAiModel>(pageNo, pageSize);
+		 IPage<TabAiModel> pageList = tabAiModelService.page(page, queryWrapper);
+		 return Result.OK(pageList);
+	 }
 
 	@Autowired
 	TabAiSubscriptionNewServiceImpl tabAiSubscriptionNewService;

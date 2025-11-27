@@ -1,7 +1,7 @@
 package org.jeecg.common.exception;
 
 /**
- * @Description: jeecg-boot自定义异常
+ * @Description: wggg自定义异常
  * @Author: WGAI
  */
 public class JeecgBootException extends RuntimeException {

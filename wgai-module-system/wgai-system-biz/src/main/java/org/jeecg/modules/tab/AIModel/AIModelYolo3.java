@@ -14,10 +14,12 @@ import org.bytedeco.javacv.*;
 import org.bytedeco.javacv.Frame;
 import org.jeecg.common.util.RedisUtil;
 import org.jeecg.modules.demo.audio.entity.TabAudioDevice;
+import org.jeecg.modules.demo.face.entity.FaceBox;
 import org.jeecg.modules.demo.tab.entity.PushInfo;
 
 import org.jeecg.modules.demo.tab.entity.TabAiModelBund;
 import org.jeecg.modules.demo.video.entity.TabVideoUtil;
+import org.jeecg.modules.demo.video.util.reture.retureBoxInfo;
 import org.jeecg.modules.message.websocket.WebSocket;
 
 
@@ -1872,6 +1874,620 @@ public class AIModelYolo3 {
                 }
             }
 
+            log.info("NMS前检测框数量: " + boxes2d.size());
+            // 6. NMS
+            MatOfRect2d boxesMat = new MatOfRect2d();
+            boxesMat.fromList(boxes2d);
+            MatOfFloat confidencesMat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+            MatOfInt indices = new MatOfInt();
+            if (!boxesMat.empty() && !confidencesMat.empty()) {
+                Dnn.NMSBoxes(boxesMat, confidencesMat, 0.1f, 0.5f, indices);
+            }
+
+            int[] indicesArr = indices.toArray();
+            log.info("NMS前检测框后数量: " + indicesArr.length);
+            // 7. 绘制检测框
+            double scale = Math.min(640.0 / image.cols(), 640.0 / image.rows());
+            double dx = (640 - image.cols() * scale) / 2;
+            double dy = (640 - image.rows() * scale) / 2;
+
+            int colorIdx = 0;
+            for (int idx : indicesArr) {
+                Rect2d box = boxes2d.get(idx);
+                int clsId = classIds.get(idx);
+                float conf = confidences.get(idx);
+
+                double x = (box.x - dx) / scale;
+                double y = (box.y - dy) / scale;
+                double width = box.width / scale;
+                double height = box.height / scale;
+
+                x = Math.max(0, Math.min(x, image.cols() - 1));
+                y = Math.max(0, Math.min(y, image.rows() - 1));
+                width = Math.min(width, image.cols() - x);
+                height = Math.min(height, image.rows() - y);
+                log.info("识别下标{}识别坐标内容{}{}{}{}",clsId,x,y,width,height);
+                Imgproc.rectangle(image, new Point(x, y), new Point(x + width, y + height), CommonColors(colorIdx), 2);
+                String label = classes.get(clsId) + ": " + String.format("%.2f", conf);
+                Imgproc.putText(image, label, new Point(x, y - 10), Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, CommonColors(colorIdx), 2);
+                colorIdx++;
+
+            }
+
+            // 8. 保存结果
+            String savepath = uploadpath + File.separator + "temp" + File.separator;
+            if (saveName != null && !saveName.isEmpty()) {
+                savepath += saveName + ".jpg";
+            } else {
+                saveName = System.currentTimeMillis() + "";
+                savepath += saveName + ".jpg";
+            }
+            Imgcodecs.imwrite(savepath, image);
+
+            long endTime = System.currentTimeMillis();
+            System.out.println("总耗时: " + (endTime - startTime) + "ms");
+            return saveName + ".jpg";
+        }
+    }
+    public static String SendPicOnnxInsightFace(String weight, String names, String picUrl,
+                                                String saveName, String uploadpath, boolean useGpu) throws Exception {
+
+        long startTime = System.currentTimeMillis();
+
+        // 1. 读取图像并预处理
+        Mat image = Imgcodecs.imread(uploadpath + File.separator + picUrl);
+        int originalWidth = image.cols();
+        int originalHeight = image.rows();
+
+        log.info("原始图像尺寸: {}x{}", originalWidth, originalHeight);
+
+        Mat processedImage = letterboxResize(image, 640, 640);
+        Imgproc.cvtColor(processedImage, processedImage, Imgproc.COLOR_BGR2RGB);
+
+        // SCRFD 归一化：(pixel - 127.5) / 128.0
+        Mat blob = new Mat();
+        processedImage.convertTo(blob, CvType.CV_32F);
+        Core.subtract(blob, new Scalar(127.5, 127.5, 127.5), blob);
+        Core.divide(blob, new Scalar(128.0, 128.0, 128.0), blob);
+
+        // HWC -> CHW
+        List<Mat> channels = new ArrayList<>();
+        Core.split(blob, channels);
+        float[] inputData = new float[3 * 640 * 640];
+        for (int c = 0; c < 3; c++) {
+            float[] data = new float[640 * 640];
+            channels.get(c).get(0, 0, data);
+            System.arraycopy(data, 0, inputData, c * 640 * 640, 640 * 640);
+        }
+
+        // 2. 创建 ONNX Runtime 环境
+        OrtEnvironment env = OrtEnvironment.getEnvironment();
+        OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+        if (useGpu) {
+            options.addCUDA();
+        } else {
+            log.info("使用onnx cpu");
+            options.setInterOpNumThreads(4);
+            options.setIntraOpNumThreads(8);
+            options.addCPU(true);
+        }
+
+        try (OrtSession session = env.createSession(uploadpath + File.separator + weight, options)) {
+            // 3. 构建输入
+            long[] shape = new long[]{1, 3, 640, 640};
+            OnnxTensor inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), shape);
+            Map<String, OnnxTensor> inputs = Collections.singletonMap(session.getInputNames().iterator().next(), inputTensor);
+
+            // 4. 推理并解析 SCRFD 输出
+            List<Rect2d> boxes2d = new ArrayList<>();
+            List<Float> confidences = new ArrayList<>();
+
+            try (OrtSession.Result results = session.run(inputs)) {
+                // 收集所有输出并排序
+                Map<String, OnnxTensor> outputMap = new HashMap<>();
+                for (Map.Entry<String, OnnxValue> entry : results) {
+                    if (entry.getValue() instanceof OnnxTensor) {
+                        outputMap.put(entry.getKey(), (OnnxTensor) entry.getValue());
+                    }
+                }
+
+                List<String> outputNames = new ArrayList<>(outputMap.keySet());
+                Collections.sort(outputNames);
+
+                log.info("SCRFD 输出数量: {}", outputNames.size());
+                for (int i = 0; i < outputNames.size(); i++) {
+                    OnnxTensor tensor = outputMap.get(outputNames.get(i));
+                    log.info("输出[{}]: {} - 形状: {}", i, outputNames.get(i),
+                            Arrays.toString(tensor.getInfo().getShape()));
+                }
+
+                // ✅ 修正：每3个一组 (score, bbox, kps)
+                // stride 8: index 0, 1, 2
+                // stride 16: index 3, 4, 5
+                // stride 32: index 6, 7, 8
+                float[][] scores_s8 = (float[][]) outputMap.get(outputNames.get(0)).getValue();
+                float[][] bboxes_s8 = (float[][]) outputMap.get(outputNames.get(1)).getValue();
+
+                float[][] scores_s16 = (float[][]) outputMap.get(outputNames.get(3)).getValue();
+                float[][] bboxes_s16 = (float[][]) outputMap.get(outputNames.get(4)).getValue();
+
+                float[][] scores_s32 = (float[][]) outputMap.get(outputNames.get(6)).getValue();
+                float[][] bboxes_s32 = (float[][]) outputMap.get(outputNames.get(7)).getValue();
+
+                // 计算坐标转换参数
+                double scale = Math.min(640.0 / originalWidth, 640.0 / originalHeight);
+                double dx = (640 - originalWidth * scale) / 2;
+                double dy = (640 - originalHeight * scale) / 2;
+
+                log.info("坐标转换参数 - scale:{}, dx:{}, dy:{}", scale, dx, dy);
+
+                // 处理 stride=8 的输出
+                int anchorIdx = 0;
+                for (int h = 0; h < 80; h++) {
+                    for (int w = 0; w < 80; w++) {
+                        for (int a = 0; a < 2; a++) {
+                            if (anchorIdx >= scores_s8.length) break;
+
+                            // 应用 sigmoid 激活函数
+                            float rawScore = scores_s8[anchorIdx][0];
+                            float score = sigmoid(rawScore);
+
+                            if (score > 0.65f) { // 置信度阈值
+                                // anchor center point
+                                float cx = (w + 0.5f) * 8;
+                                float cy = (h + 0.5f) * 8;
+
+                                // 解码bbox
+                                float dist_left = bboxes_s8[anchorIdx][0] * 8;
+                                float dist_top = bboxes_s8[anchorIdx][1] * 8;
+                                float dist_right = bboxes_s8[anchorIdx][2] * 8;
+                                float dist_bottom = bboxes_s8[anchorIdx][3] * 8;
+
+                                float x1 = cx - dist_left;
+                                float y1 = cy - dist_top;
+                                float x2 = cx + dist_right;
+                                float y2 = cy + dist_bottom;
+
+                                // 转换回原图坐标
+                                x1 = (float) ((x1 - dx) / scale);
+                                y1 = (float) ((y1 - dy) / scale);
+                                x2 = (float) ((x2 - dx) / scale);
+                                y2 = (float) ((y2 - dy) / scale);
+
+                                // 裁剪到图像边界
+                                x1 = Math.max(0, Math.min(x1, originalWidth - 1));
+                                y1 = Math.max(0, Math.min(y1, originalHeight - 1));
+                                x2 = Math.max(0, Math.min(x2, originalWidth - 1));
+                                y2 = Math.max(0, Math.min(y2, originalHeight - 1));
+
+                                float width = x2 - x1;
+                                float height = y2 - y1;
+
+                                // 更严格的尺寸过滤 + 宽高比检查
+                                if (width > 20 && height > 20 && width < originalWidth * 0.8 && height < originalHeight * 0.8) {
+                                    float aspectRatio = width / height;
+                                    if (aspectRatio > 0.5 && aspectRatio < 2.0) {
+                                        boxes2d.add(new Rect2d(x1, y1, width, height));
+                                        confidences.add(score);
+                                    }
+                                }
+                            }
+                            anchorIdx++;
+                        }
+                    }
+                }
+                log.info("stride=8 处理完成");
+
+                // 处理 stride=16 的输出
+                anchorIdx = 0;
+                for (int h = 0; h < 40; h++) {
+                    for (int w = 0; w < 40; w++) {
+                        for (int a = 0; a < 2; a++) {
+                            if (anchorIdx >= scores_s16.length) break;
+
+                            float rawScore = scores_s16[anchorIdx][0];
+                            float score = sigmoid(rawScore);
+
+                            if (score > 0.65f) {
+                                float cx = (w + 0.5f) * 16;
+                                float cy = (h + 0.5f) * 16;
+
+                                float dist_left = bboxes_s16[anchorIdx][0] * 16;
+                                float dist_top = bboxes_s16[anchorIdx][1] * 16;
+                                float dist_right = bboxes_s16[anchorIdx][2] * 16;
+                                float dist_bottom = bboxes_s16[anchorIdx][3] * 16;
+
+                                float x1 = cx - dist_left;
+                                float y1 = cy - dist_top;
+                                float x2 = cx + dist_right;
+                                float y2 = cy + dist_bottom;
+
+                                x1 = (float) ((x1 - dx) / scale);
+                                y1 = (float) ((y1 - dy) / scale);
+                                x2 = (float) ((x2 - dx) / scale);
+                                y2 = (float) ((y2 - dy) / scale);
+
+                                x1 = Math.max(0, Math.min(x1, originalWidth - 1));
+                                y1 = Math.max(0, Math.min(y1, originalHeight - 1));
+                                x2 = Math.max(0, Math.min(x2, originalWidth - 1));
+                                y2 = Math.max(0, Math.min(y2, originalHeight - 1));
+
+                                float width = x2 - x1;
+                                float height = y2 - y1;
+
+                                if (width > 20 && height > 20 && width < originalWidth * 0.8 && height < originalHeight * 0.8) {
+                                    float aspectRatio = width / height;
+                                    if (aspectRatio > 0.5 && aspectRatio < 2.0) {
+                                        boxes2d.add(new Rect2d(x1, y1, width, height));
+                                        confidences.add(score);
+                                    }
+                                }
+                            }
+                            anchorIdx++;
+                        }
+                    }
+                }
+                log.info("stride=16 处理完成");
+
+                // 处理 stride=32 的输出
+                anchorIdx = 0;
+                for (int h = 0; h < 20; h++) {
+                    for (int w = 0; w < 20; w++) {
+                        for (int a = 0; a < 2; a++) {
+                            if (anchorIdx >= scores_s32.length) break;
+
+                            float rawScore = scores_s32[anchorIdx][0];
+                            float score = sigmoid(rawScore);
+
+                            if (score > 0.65f) {
+                                float cx = (w + 0.5f) * 32;
+                                float cy = (h + 0.5f) * 32;
+
+                                float dist_left = bboxes_s32[anchorIdx][0] * 32;
+                                float dist_top = bboxes_s32[anchorIdx][1] * 32;
+                                float dist_right = bboxes_s32[anchorIdx][2] * 32;
+                                float dist_bottom = bboxes_s32[anchorIdx][3] * 32;
+
+                                float x1 = cx - dist_left;
+                                float y1 = cy - dist_top;
+                                float x2 = cx + dist_right;
+                                float y2 = cy + dist_bottom;
+
+                                x1 = (float) ((x1 - dx) / scale);
+                                y1 = (float) ((y1 - dy) / scale);
+                                x2 = (float) ((x2 - dx) / scale);
+                                y2 = (float) ((y2 - dy) / scale);
+
+                                x1 = Math.max(0, Math.min(x1, originalWidth - 1));
+                                y1 = Math.max(0, Math.min(y1, originalHeight - 1));
+                                x2 = Math.max(0, Math.min(x2, originalWidth - 1));
+                                y2 = Math.max(0, Math.min(y2, originalHeight - 1));
+
+                                float width = x2 - x1;
+                                float height = y2 - y1;
+
+                                if (width > 20 && height > 20 && width < originalWidth * 0.8 && height < originalHeight * 0.8) {
+                                    float aspectRatio = width / height;
+                                    if (aspectRatio > 0.5 && aspectRatio < 2.0) {
+                                        boxes2d.add(new Rect2d(x1, y1, width, height));
+                                        confidences.add(score);
+                                    }
+                                }
+                            }
+                            anchorIdx++;
+                        }
+                    }
+                }
+                log.info("stride=32 处理完成");
+            }
+
+            log.info("NMS前检测框数量: {}", boxes2d.size());
+
+            // 5. NMS - 更严格的参数
+            MatOfRect2d boxesMat = new MatOfRect2d();
+            boxesMat.fromList(boxes2d);
+            MatOfFloat confidencesMat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+            MatOfInt indices = new MatOfInt();
+            if (!boxesMat.empty() && !confidencesMat.empty()) {
+                Dnn.NMSBoxes(boxesMat, confidencesMat, 0.65f, 0.4f, indices);
+            }
+
+            int[] indicesArr = indices.toArray();
+            log.info("NMS后检测框数量: {}", indicesArr.length);
+
+            // 6. 绘制检测框
+            for (int i = 0; i < indicesArr.length; i++) {
+                int idx = indicesArr[i];
+                Rect2d box = boxes2d.get(idx);
+                float conf = confidences.get(idx);
+
+                double x = box.x;
+                double y = box.y;
+                double width = box.width;
+                double height = box.height;
+
+                log.info("✅ 人脸 {} - 坐标: ({}, {}), 尺寸: {}x{}, 置信度: {}",
+                        i + 1, x, y, width, height, conf);
+
+                // 绘制矩形框
+                Scalar color = CommonColors(i % 10);
+                Imgproc.rectangle(image,
+                        new Point(x, y),
+                        new Point(x + width, y + height),
+                        color, 2);
+
+                // 绘制标签
+                String label = String.format("Face %.2f", conf);
+                int[] baseline = new int[1];
+                Size textSize = Imgproc.getTextSize(label, Imgproc.FONT_HERSHEY_SIMPLEX, 0.5, 1, baseline);
+
+                // 标签背景
+                Imgproc.rectangle(image,
+                        new Point(x, y - textSize.height - 10),
+                        new Point(x + textSize.width, y),
+                        color, -1);
+
+                // 标签文字
+                Imgproc.putText(image, label,
+                        new Point(x, y - 5),
+                        Imgproc.FONT_HERSHEY_SIMPLEX, 0.5,
+                        new Scalar(255, 255, 255), 1);
+            }
+
+            // 7. 保存结果
+            String savepath = uploadpath + File.separator + "temp" + File.separator;
+            if (saveName != null && !saveName.isEmpty()) {
+                savepath += saveName + ".jpg";
+            } else {
+                saveName = System.currentTimeMillis() + "";
+                savepath += saveName + ".jpg";
+            }
+            Imgcodecs.imwrite(savepath, image);
+
+            long endTime = System.currentTimeMillis();
+            log.info("总耗时: {}ms", (endTime - startTime));
+            return saveName + ".jpg";
+        }
+    }
+
+
+
+    /**
+     * 处理 SCRFD 单个尺度的输出
+     */
+    private static void processSCRFDScale(float[][] scores, float[][] bboxes,
+                                          int stride, int featSize,
+                                          List<Rect2d> boxes2d, List<Float> confidences,
+                                          double scale, double dx, double dy,
+                                          int originalWidth, int originalHeight) {
+
+        int anchorIdx = 0;
+        for (int h = 0; h < featSize; h++) {
+            for (int w = 0; w < featSize; w++) {
+                for (int a = 0; a < 2; a++) { // 每个位置2个anchor
+                    if (anchorIdx >= scores.length) break;
+
+                    float score = scores[anchorIdx][0];
+                    if (score < 0.5f) { // 置信度阈值
+                        anchorIdx++;
+                        continue;
+                    }
+
+                    // anchor center
+                    float cx = (w + 0.5f) * stride;
+                    float cy = (h + 0.5f) * stride;
+
+                    // 解码边界框: distance to ltrb
+                    float left = bboxes[anchorIdx][0] * stride;
+                    float top = bboxes[anchorIdx][1] * stride;
+                    float right = bboxes[anchorIdx][2] * stride;
+                    float bottom = bboxes[anchorIdx][3] * stride;
+
+                    // 计算实际坐标
+                    float x1 = cx - left;
+                    float y1 = cy - top;
+                    float x2 = cx + right;
+                    float y2 = cy + bottom;
+
+                    // 转换回原图尺寸
+                    x1 = (float) ((x1 - dx) / scale);
+                    y1 = (float) ((y1 - dy) / scale);
+                    x2 = (float) ((x2 - dx) / scale);
+                    y2 = (float) ((y2 - dy) / scale);
+
+                    // 边界裁剪
+                    x1 = Math.max(0, Math.min(x1, originalWidth));
+                    y1 = Math.max(0, Math.min(y1, originalHeight));
+                    x2 = Math.max(0, Math.min(x2, originalWidth));
+                    y2 = Math.max(0, Math.min(y2, originalHeight));
+
+                    float w_box = x2 - x1;
+                    float h_box = y2 - y1;
+
+                    if (w_box > 0 && h_box > 0) {
+                        boxes2d.add(new Rect2d(x1, y1, w_box, h_box));
+                        confidences.add(score);
+                    }
+
+                    anchorIdx++;
+                }
+            }
+        }
+
+        log.info("stride={} 处理完成，检测到 {} 个候选框", stride, anchorIdx);
+    }
+    /***
+     *  截取face
+     * @param weight
+     * @param names
+     * @param picUrl
+     * @param saveName
+     * @param uploadpath
+     * @param useGpu
+     * @return
+     * @throws Exception
+     */
+    public static retureBoxInfo SendPicOnnxFace(String weight, String names, String picUrl,
+                                                String saveName, String uploadpath, boolean useGpu) throws Exception {
+
+        long startTime = System.currentTimeMillis();
+        retureBoxInfo retureBoxInfo=new retureBoxInfo();
+        retureBoxInfo.setFlag(false);
+
+
+        // 1. 加载类别名称
+        List<String> classes = Files.readAllLines(Paths.get(uploadpath + File.separator + names));
+        int expectedClassCount = classes.size();
+
+        // 2. 读取图像并预处理
+        Mat image = Imgcodecs.imread(uploadpath + File.separator + picUrl);
+        Mat processedImage = letterboxResize(image, 640, 640);
+        // ✅ 修复：BGR → RGB
+        Imgproc.cvtColor(processedImage, processedImage, Imgproc.COLOR_BGR2RGB);
+
+        // HWC -> CHW
+        Mat blob = new Mat();
+        processedImage.convertTo(blob, CvType.CV_32F, 1.0 / 255.0);
+        List<Mat> channels = new ArrayList<>();
+        Core.split(blob, channels);
+        float[] inputData = new float[3 * 640 * 640];
+        for (int c = 0; c < 3; c++) {
+            float[] data = new float[640 * 640];
+            channels.get(c).get(0, 0, data);
+            System.arraycopy(data, 0, inputData, c * 640 * 640, 640 * 640);
+        }
+
+        // 3. 创建 ONNX Runtime 环境
+        OrtEnvironment env = OrtEnvironment.getEnvironment();
+        OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+        if (useGpu) {
+            options.addCUDA(); // 使用 GPU
+        } else {
+            log.info("使用onnx cpu");
+            options.setInterOpNumThreads(4);   // 线程池并行
+            options.setIntraOpNumThreads(8);   // 单算子内并行
+            options.addCPU(true);  // 强制 CPU
+        }
+
+        try (OrtSession session = env.createSession(uploadpath + File.separator + weight, options)) {
+            // 4. 构建输入
+            long[] shape = new long[]{1, 3, 640, 640};
+            OnnxTensor inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), shape);
+            Map<String, OnnxTensor> inputs = Collections.singletonMap(session.getInputNames().iterator().next(), inputTensor);
+
+            // 5. 推理
+            List<Rect2d> boxes2d = new ArrayList<>();
+            List<Float> confidences = new ArrayList<>();
+            List<Integer> classIds = new ArrayList<>();
+
+            try (OrtSession.Result results = session.run(inputs)) {
+                for (Map.Entry<String, OnnxValue> entry : results) {
+                    OnnxValue value = entry.getValue();
+                    if (!(value instanceof OnnxTensor)) continue;
+                    OnnxTensor tensor = (OnnxTensor) value;
+
+                    // 获取输出张量的形状
+                    long[] tensorShape = tensor.getInfo().getShape();
+                    Object rawOutput = tensor.getValue();
+
+                    if (rawOutput instanceof float[][][]) { // 常见 YOLOv5/11 输出
+                        float[][][] batch = (float[][][]) rawOutput;
+
+                        // 判断是否需要转置 (YOLOv11 格式: [1, 84, 8400])
+                        boolean needTranspose = tensorShape.length == 3 &&
+                                tensorShape[1] < tensorShape[2] &&
+                                tensorShape[1] <= (expectedClassCount + 5);
+
+                        for (float[][] detections : batch) {
+                            if (needTranspose) {
+                                // YOLOv11 转置处理: [84, 8400] -> 按列遍历
+                                int numFeatures = (int) tensorShape[1]; // 84
+                                int numDetections = (int) tensorShape[2]; // 8400
+                                int numClasses = numFeatures - 4;
+
+                                for (int i = 0; i < numDetections; i++) {
+                                    float cx = detections[0][i];
+                                    float cy = detections[1][i];
+                                    float w = detections[2][i];
+                                    float h = detections[3][i];
+
+                                    // 找到最高分数的类别
+                                    float maxScore = 0;
+                                    int classId = 0;
+                                    for (int c = 0; c < numClasses; c++) {
+                                        if (detections[4 + c][i] > maxScore) {
+                                            maxScore = detections[4 + c][i];
+                                            classId = c;
+                                        }
+                                    }
+
+                                    // 边界检查并添加检测结果
+                                    if (maxScore > 0.35f && classId < expectedClassCount) {
+                                        boxes2d.add(new Rect2d(cx - w / 2, cy - h / 2, w, h));
+                                        confidences.add(maxScore);
+                                        classIds.add(classId);
+                                    }
+                                }
+                            } else {
+                                // YOLOv5 原有处理逻辑: [25200, 85]
+                                for (float[] det : detections) {
+                                    int actualClassCount;
+                                    boolean hasObjectness;
+                                    if (det.length > 5) { // YOLOv5
+                                        hasObjectness = true;
+                                        actualClassCount = det.length - 5;
+                                    } else { // YOLOv11 (2D输出)
+                                        hasObjectness = false;
+                                        actualClassCount = det.length - 4;
+                                    }
+
+                                    int classId = 0;
+                                    float maxScore = 0;
+                                    for (int i = hasObjectness ? 5 : 4; i < det.length; i++) {
+                                        if (det[i] > maxScore) {
+                                            maxScore = det[i];
+                                            classId = i - (hasObjectness ? 5 : 4);
+                                        }
+                                    }
+
+                                    float confidence = hasObjectness ? det[4] * maxScore : maxScore;
+
+                                    // 边界检查并添加检测结果
+                                    if (confidence > 0.35f && classId < expectedClassCount) {
+                                        float cx = det[0], cy = det[1], w = det[2], h = det[3];
+                                        boxes2d.add(new Rect2d(cx - w / 2, cy - h / 2, w, h));
+                                        confidences.add(confidence);
+                                        classIds.add(classId);
+                                    }
+                                }
+                            }
+                        }
+                    } else if (rawOutput instanceof float[][]) {
+                        // 可处理部分 YOLOv11 输出为 2D
+                        float[][] detections = (float[][]) rawOutput;
+                        for (float[] det : detections) {
+                            int actualClassCount = det.length - 4;
+                            float confidence = 0;
+                            int classId = 0;
+                            for (int i = 4; i < det.length; i++) {
+                                if (det[i] > confidence) {
+                                    confidence = det[i];
+                                    classId = i - 4;
+                                }
+                            }
+
+                            // 边界检查并添加检测结果
+                            if (confidence > 0.35f && classId < expectedClassCount) {
+                                float cx = det[0], cy = det[1], w = det[2], h = det[3];
+                                boxes2d.add(new Rect2d(cx - w / 2, cy - h / 2, w, h));
+                                confidences.add(confidence);
+                                classIds.add(classId);
+                            }
+                        }
+                    }
+                }
+            }
+
             // 6. NMS
             MatOfRect2d boxesMat = new MatOfRect2d();
             boxesMat.fromList(boxes2d);
@@ -1910,19 +2526,7 @@ public class AIModelYolo3 {
                 colorIdx++;
             }
 
-            // 8. 保存结果
-            String savepath = uploadpath + File.separator + "temp" + File.separator;
-            if (saveName != null && !saveName.isEmpty()) {
-                savepath += saveName + ".jpg";
-            } else {
-                saveName = System.currentTimeMillis() + "";
-                savepath += saveName + ".jpg";
-            }
-            Imgcodecs.imwrite(savepath, image);
-
-            long endTime = System.currentTimeMillis();
-            System.out.println("总耗时: " + (endTime - startTime) + "ms");
-            return saveName + ".jpg";
+            return retureBoxInfo;
         }
     }
 
@@ -3347,5 +3951,270 @@ public class AIModelYolo3 {
             colors[i] = new Scalar(b, g, r);
         }
         return colors;
+    }
+
+
+    /**
+     * 人脸检测 - 使用 SCRFD-10G
+     */
+    public static List<FaceBox> detectFaces(String modelPath, String imagePath,
+                                      String uploadpath, boolean useGpu) throws Exception {
+
+        Mat image = Imgcodecs.imread(uploadpath + File.separator + imagePath);
+        if (image.empty()) {
+            throw new RuntimeException("无法读取图像: " + imagePath);
+        }
+
+        int originalWidth = image.cols();
+        int originalHeight = image.rows();
+
+        // 预处理
+        Mat processedImage = letterboxResize(image, 640, 640);
+        Imgproc.cvtColor(processedImage, processedImage, Imgproc.COLOR_BGR2RGB);
+
+        // SCRFD 归一化
+        Mat blob = new Mat();
+        processedImage.convertTo(blob, CvType.CV_32F);
+        Core.subtract(blob, new Scalar(127.5, 127.5, 127.5), blob);
+        Core.divide(blob, new Scalar(128.0, 128.0, 128.0), blob);
+
+        // HWC -> CHW
+        float[] inputData = matToFloatArrayCHW(blob, 640, 640);
+
+        // ONNX 推理
+        OrtEnvironment env = OrtEnvironment.getEnvironment();
+        OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+        if (useGpu) {
+            options.addCUDA();
+        } else {
+            options.setInterOpNumThreads(4);
+            options.setIntraOpNumThreads(8);
+            options.addCPU(true);
+        }
+
+        List<FaceBox> faceBoxes = new ArrayList<>();
+
+        try (OrtSession session = env.createSession(uploadpath + File.separator + modelPath, options)) {
+            long[] shape = {1, 3, 640, 640};
+            OnnxTensor inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), shape);
+            Map<String, OnnxTensor> inputs = Collections.singletonMap(
+                    session.getInputNames().iterator().next(), inputTensor
+            );
+
+            try (OrtSession.Result results = session.run(inputs)) {
+                // 收集输出
+                Map<String, OnnxTensor> outputMap = new HashMap<>();
+                for (Map.Entry<String, OnnxValue> entry : results) {
+                    if (entry.getValue() instanceof OnnxTensor) {
+                        outputMap.put(entry.getKey(), (OnnxTensor) entry.getValue());
+                    }
+                }
+
+                List<String> outputNames = new ArrayList<>(outputMap.keySet());
+                Collections.sort(outputNames);
+
+                // 提取 score 和 bbox
+                float[][] scores_s8 = (float[][]) outputMap.get(outputNames.get(0)).getValue();
+                float[][] bboxes_s8 = (float[][]) outputMap.get(outputNames.get(1)).getValue();
+                float[][] scores_s16 = (float[][]) outputMap.get(outputNames.get(3)).getValue();
+                float[][] bboxes_s16 = (float[][]) outputMap.get(outputNames.get(4)).getValue();
+                float[][] scores_s32 = (float[][]) outputMap.get(outputNames.get(6)).getValue();
+                float[][] bboxes_s32 = (float[][]) outputMap.get(outputNames.get(7)).getValue();
+
+                // 坐标转换参数
+                double scale = Math.min(640.0 / originalWidth, 640.0 / originalHeight);
+                double dx = (640 - originalWidth * scale) / 2;
+                double dy = (640 - originalHeight * scale) / 2;
+
+                List<Rect2d> boxes2d = new ArrayList<>();
+                List<Float> confidences = new ArrayList<>();
+
+                // 处理三个尺度
+                processSCRFDStride(scores_s8, bboxes_s8, 8, 80, boxes2d, confidences,
+                        scale, dx, dy, originalWidth, originalHeight);
+                processSCRFDStride(scores_s16, bboxes_s16, 16, 40, boxes2d, confidences,
+                        scale, dx, dy, originalWidth, originalHeight);
+                processSCRFDStride(scores_s32, bboxes_s32, 32, 20, boxes2d, confidences,
+                        scale, dx, dy, originalWidth, originalHeight);
+
+                // NMS
+                MatOfRect2d boxesMat = new MatOfRect2d();
+                boxesMat.fromList(boxes2d);
+                MatOfFloat confidencesMat = new MatOfFloat(Converters.vector_float_to_Mat(confidences));
+                MatOfInt indices = new MatOfInt();
+
+                if (!boxesMat.empty() && !confidencesMat.empty()) {
+                    Dnn.NMSBoxes(boxesMat, confidencesMat, 0.65f, 0.4f, indices);
+                }
+
+                int[] indicesArr = indices.toArray();
+                for (int idx : indicesArr) {
+                    Rect2d box = boxes2d.get(idx);
+                    FaceBox faceBox = new FaceBox();
+                    faceBox.setX(box.x);
+                    faceBox.setY(box.y);
+                    faceBox.setWidth(box.width);
+                    faceBox.setHeight(box.height);
+                    faceBox.setConfidence(confidences.get(idx));
+                    faceBoxes.add(faceBox);
+                }
+            }
+        }
+
+        return faceBoxes;
+    }
+
+    /**
+     * 处理 SCRFD 单个尺度
+     */
+    private  static  void processSCRFDStride(float[][] scores, float[][] bboxes, int stride, int featSize,
+                                    List<Rect2d> boxes2d, List<Float> confidences,
+                                    double scale, double dx, double dy,
+                                    int originalWidth, int originalHeight) {
+        int anchorIdx = 0;
+        for (int h = 0; h < featSize; h++) {
+            for (int w = 0; w < featSize; w++) {
+                for (int a = 0; a < 2; a++) {
+                    if (anchorIdx >= scores.length) break;
+
+                    float rawScore = scores[anchorIdx][0];
+                    float score = sigmoid(rawScore);
+
+                    if (score > 0.65f) {
+                        float cx = (w + 0.5f) * stride;
+                        float cy = (h + 0.5f) * stride;
+
+                        float dist_left = bboxes[anchorIdx][0] * stride;
+                        float dist_top = bboxes[anchorIdx][1] * stride;
+                        float dist_right = bboxes[anchorIdx][2] * stride;
+                        float dist_bottom = bboxes[anchorIdx][3] * stride;
+
+                        float x1 = cx - dist_left;
+                        float y1 = cy - dist_top;
+                        float x2 = cx + dist_right;
+                        float y2 = cy + dist_bottom;
+
+                        x1 = (float) ((x1 - dx) / scale);
+                        y1 = (float) ((y1 - dy) / scale);
+                        x2 = (float) ((x2 - dx) / scale);
+                        y2 = (float) ((y2 - dy) / scale);
+
+                        x1 = Math.max(0, Math.min(x1, originalWidth - 1));
+                        y1 = Math.max(0, Math.min(y1, originalHeight - 1));
+                        x2 = Math.max(0, Math.min(x2, originalWidth - 1));
+                        y2 = Math.max(0, Math.min(y2, originalHeight - 1));
+
+                        float width = x2 - x1;
+                        float height = y2 - y1;
+
+                        if (width > 20 && height > 20 && width < originalWidth * 0.8 && height < originalHeight * 0.8) {
+                            float aspectRatio = width / height;
+                            if (aspectRatio > 0.5 && aspectRatio < 2.0) {
+                                boxes2d.add(new Rect2d(x1, y1, width, height));
+                                confidences.add(score);
+                            }
+                        }
+                    }
+                    anchorIdx++;
+                }
+            }
+        }
+    }
+
+
+
+    /**
+     * 提取人脸特征 - 使用 InsightFace w600k_r50
+     */
+    public static float[] extractFaceFeature(String modelPath, String imagePath, FaceBox faceBox,
+                                       String uploadpath, boolean useGpu) throws Exception {
+
+        // 读取原图
+        Mat image = Imgcodecs.imread(uploadpath + File.separator + imagePath);
+        if (image.empty()) {
+            throw new RuntimeException("无法读取图像: " + imagePath);
+        }
+
+        // 裁剪人脸区域（加一些边距）
+        int padding = 10;
+        int x = Math.max(0, (int) faceBox.getX() - padding);
+        int y = Math.max(0, (int) faceBox.getY() - padding);
+        int width = Math.min((int) faceBox.getWidth() + 2 * padding, image.cols() - x);
+        int height = Math.min((int) faceBox.getHeight()+ 2 * padding, image.rows() - y);
+
+        Rect faceRect = new Rect(x, y, width, height);
+        Mat faceCrop = new Mat(image, faceRect);
+
+        // InsightFace 预处理：resize 到 112x112
+        Mat resized = new Mat();
+        Imgproc.resize(faceCrop, resized, new Size(112, 112));
+        Imgproc.cvtColor(resized, resized, Imgproc.COLOR_BGR2RGB);
+
+        // 归一化：(pixel - 127.5) / 128.0
+        resized.convertTo(resized, CvType.CV_32F);
+        Core.subtract(resized, new Scalar(127.5, 127.5, 127.5), resized);
+        Core.divide(resized, new Scalar(128.0, 128.0, 128.0), resized);
+
+        // HWC -> CHW
+        float[] inputData = matToFloatArrayCHW(resized, 112, 112);
+
+        // ONNX 推理
+        OrtEnvironment env = OrtEnvironment.getEnvironment();
+        OrtSession.SessionOptions options = new OrtSession.SessionOptions();
+        if (useGpu) {
+            options.addCUDA();
+        } else {
+            options.setInterOpNumThreads(4);
+            options.setIntraOpNumThreads(8);
+        }
+
+        try (OrtSession session = env.createSession(uploadpath + File.separator + modelPath, options)) {
+            long[] shape = {1, 3, 112, 112};
+            OnnxTensor inputTensor = OnnxTensor.createTensor(env, FloatBuffer.wrap(inputData), shape);
+            Map<String, OnnxTensor> inputs = Collections.singletonMap(
+                    session.getInputNames().iterator().next(), inputTensor
+            );
+
+            try (OrtSession.Result results = session.run(inputs)) {
+                OnnxTensor outputTensor = (OnnxTensor) results.get(0);
+                float[][] output = (float[][]) outputTensor.getValue();
+
+                // L2 归一化
+                return normalizeL2(output[0]);
+            }
+        }
+    }
+    /**
+     * L2 归一化
+     */
+    private static float[] normalizeL2(float[] feature) {
+        double norm = 0.0;
+        for (float v : feature) {
+            norm += v * v;
+        }
+        norm = Math.sqrt(norm);
+
+        float[] normalized = new float[feature.length];
+        for (int i = 0; i < feature.length; i++) {
+            normalized[i] = (float) (feature[i] / (norm + 1e-10));
+        }
+        return normalized;
+    }
+
+    /**
+     * Mat 转 CHW float 数组
+     */
+    private static float[] matToFloatArrayCHW(Mat mat, int width, int height) {
+        List<Mat> channels = new ArrayList<>();
+        Core.split(mat, channels);
+
+        float[] inputData = new float[3 * width * height];
+        for (int c = 0; c < 3; c++) {
+            float[] data = new float[width * height];
+            channels.get(c).get(0, 0, data);
+            System.arraycopy(data, 0, inputData, c * width * height, width * height);
+        }
+
+        return inputData;
     }
 }

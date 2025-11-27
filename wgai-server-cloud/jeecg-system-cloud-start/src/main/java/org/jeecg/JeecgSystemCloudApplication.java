@@ -45,7 +45,7 @@ public class JeecgSystemCloudApplication extends SpringBootServletInitializer im
         String port = env.getProperty("server.port");
         String path = oConvertUtils.getString(env.getProperty("server.servlet.context-path"));
         log.info("\n----------------------------------------------------------\n\t" +
-                "Application Jeecg-Boot is running! Access URLs:\n\t" +
+                "Application WGAI is running! Access URLs:\n\t" +
                 "Local: \t\thttp://localhost:" + port + path + "/doc.html\n" +
                 "External: \thttp://" + ip + ":" + port + path + "/doc.html\n" +
                 "Swagger文档: \thttp://" + ip + ":" + port + path + "/doc.html\n" +

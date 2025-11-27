@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 
 /**
  * @Description: 报警信息
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-02-20
  * @Version: V1.0
  */

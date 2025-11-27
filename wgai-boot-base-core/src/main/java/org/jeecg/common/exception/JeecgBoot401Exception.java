@@ -1,7 +1,7 @@
 package org.jeecg.common.exception;
 
 /**
- * @Description: jeecg-boot自定义401异常
+ * @Description: wggg自定义401异常
  * @Author: WGAI
  */
 public class JeecgBoot401Exception extends RuntimeException {

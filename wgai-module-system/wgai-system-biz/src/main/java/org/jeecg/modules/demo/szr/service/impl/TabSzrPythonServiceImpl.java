@@ -38,7 +38,7 @@ import static org.jeecg.modules.demo.train.service.impl.TabTrainPythonServiceImp
 
 /**
  * @Description: 数字人训练脚本
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-04-17
  * @Version: V1.0
  */

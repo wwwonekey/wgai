@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * @Description: 训练日志
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-01-16
  * @Version: V1.0
  */

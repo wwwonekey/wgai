@@ -106,4 +106,21 @@ public class TabAiModel implements Serializable {
     @ApiModelProperty(value = "解码方式")
     @Dict(dicCode = "jm_type")
     private Integer modelJmType;
+
+
+    @Excel(name = "AI权重文件", width = 15)
+    @ApiModelProperty(value = "AI权重文件")
+    private String endWeights;
+    /**AI配置文件*/
+    @Excel(name = "AI配置文件", width = 15)
+    @ApiModelProperty(value = "AI配置文件")
+    private String endConfig;
+
+
+    @Excel(name = "AI配置文件", width = 15)
+    @ApiModelProperty(value = "AI配置文件")
+    private String endName;
+
+
+
 }

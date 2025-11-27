@@ -38,7 +38,7 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 
  /**
  * @Description: 模型下发列表
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-02-25
  * @Version: V1.0
  */

@@ -27,6 +27,6 @@ public class SampleParamJob implements Job {
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 		log.info(" Job Execution key："+jobExecutionContext.getJobDetail().getKey());
-		log.info( String.format("welcome %s! Jeecg-Boot 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
+		log.info( String.format("welcome %s! wgai 带参数定时任务 SampleParamJob !   时间:" + DateUtils.now(), this.parameter));
 	}
 }

@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * 下拉树 model
  *
- * @author jeecg-boot
+ * @author wggg
  */
 @Data
 public class SelectTreeModel implements Serializable {

@@ -535,8 +535,15 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
                 }else{
                     if(tabAiModel1.getModelDifyType()!=null&&tabAiModel1.getModelDifyType()==20){
                         log.info("使用ONNX推理！！！");
-                        savePath=modelYolo3.SendPicOnnxYoloV11(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path,gpuFlag);
-                    }else{
+                        if(tabAiModel1.getModelDify()!=null&&tabAiModel1.getModelDify()==8){//人脸定位
+                            log.info("人脸定位！");
+                            savePath=modelYolo3.SendPicOnnxInsightFace(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path,gpuFlag);
+
+                        }else{
+                            savePath=modelYolo3.SendPicOnnxYoloV11(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path,gpuFlag);
+
+                        }
+                  }else{
                         log.info("使用opencV推理！！！");
                         savePath=modelYolo3.SendPicYoloV11(tabAiModel1.getAiWeights(),tabAiModel1.getAiNameName(),tabAiModelBund.getSaveUrl(),null,path,gpuFlag);
                     }

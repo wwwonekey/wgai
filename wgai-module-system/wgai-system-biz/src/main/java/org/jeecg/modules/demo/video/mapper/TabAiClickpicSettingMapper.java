@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * @Description: 采集图片配置
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-02-25
  * @Version: V1.0
  */

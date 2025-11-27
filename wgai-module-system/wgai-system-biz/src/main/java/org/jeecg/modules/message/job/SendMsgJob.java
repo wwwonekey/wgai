@@ -32,7 +32,7 @@ public class SendMsgJob implements Job {
 	@Override
 	public void execute(JobExecutionContext jobExecutionContext) throws JobExecutionException {
 
-		log.info(String.format(" Jeecg-Boot 发送消息任务 SendMsgJob !  时间:" + DateUtils.getTimestamp()));
+		log.info(String.format(" WGAI 发送消息任务 SendMsgJob !  时间:" + DateUtils.getTimestamp()));
 
 		// 1.读取消息中心数据，只查询未发送的和发送失败不超过次数的
 		QueryWrapper<SysMessage> queryWrapper = new QueryWrapper<SysMessage>();

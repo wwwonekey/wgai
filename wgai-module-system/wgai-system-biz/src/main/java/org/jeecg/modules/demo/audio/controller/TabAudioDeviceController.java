@@ -38,7 +38,7 @@ import org.jeecg.common.aspect.annotation.AutoLog;
 
  /**
  * @Description: 播报设备
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-03-07
  * @Version: V1.0
  */

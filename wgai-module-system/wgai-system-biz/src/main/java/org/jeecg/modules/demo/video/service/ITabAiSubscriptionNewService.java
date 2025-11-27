@@ -8,7 +8,7 @@ import java.io.IOException;
 
 /**
  * @Description: 多程第三方订阅
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-05-20
  * @Version: V1.0
  */

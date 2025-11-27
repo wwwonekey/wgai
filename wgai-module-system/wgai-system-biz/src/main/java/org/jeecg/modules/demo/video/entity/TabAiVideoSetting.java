@@ -20,7 +20,7 @@ import lombok.experimental.Accessors;
 
 /**
  * @Description: AI视频配置
- * @Author: jeecg-boot
+ * @Author: wggg
  * @Date:   2025-05-19
  * @Version: V1.0
  */

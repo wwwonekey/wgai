@@ -144,7 +144,7 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
      * @param folder 目标文件目录
      * @return
      */
-    public static synchronized List<String> changeFileName(List<String> path, boolean flag, String folder, String upLoadPath, String picfolader) {
+    public static synchronized List<String> changeFileName(List<String> path, boolean flag, String folder, String upLoadPath, String picfolader,boolean reZizePic) {
         if (flag) { //从0 开始
             deleteAllFilesInFolder(new File(folder));
         }
@@ -169,19 +169,24 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
                 } else {
                     log.info("文件移动或重命名失败！");
                 }
-                //移动后文件
-                File Change = new File(folder + File.separator + newFileName);
-                //图片统一存储到700*700
-                BufferedImage inputImage = ImageIO.read(Change);
-                // 创建新的空白图片，大小为 800x800
-                BufferedImage resizedImage = new BufferedImage(700, 700, inputImage.getType());
-                // 使用 Graphics2D 来缩放图片
-                Graphics2D g2d = resizedImage.createGraphics();
-                g2d.drawImage(inputImage, 0, 0, 700, 700, null);
-                g2d.dispose();
-                // 保存修改后的图片
-                ImageIO.write(resizedImage, "png", Change);
-                log.info("图片已成功保存为 700*700 像素");
+                if(reZizePic){
+                    //移动后文件
+                    File Change = new File(folder + File.separator + newFileName);
+                    //图片统一存储到700*700
+                    BufferedImage inputImage = ImageIO.read(Change);
+                    // 创建新的空白图片，大小为 800x800
+                    BufferedImage resizedImage = new BufferedImage(700, 700, inputImage.getType());
+                    // 使用 Graphics2D 来缩放图片
+                    Graphics2D g2d = resizedImage.createGraphics();
+                    g2d.drawImage(inputImage, 0, 0, 700, 700, null);
+                    g2d.dispose();
+                    // 保存修改后的图片
+                    ImageIO.write(resizedImage, "png", Change);
+                    log.info("图片已成功保存为 700*700 像素");
+                }
+
+
+
                 renamePic.add(newFileName);
             }
         } catch (Exception ex) {
@@ -322,7 +327,7 @@ public class TabModelTryServiceImpl extends ServiceImpl<TabModelTryMapper, TabMo
             }
 
             //文件处理
-            List<String> changeFile = changeFileName(list, tabModelTry.getIsInsert().equals("Y"), upLoadPath + "/" + tabModelTry.getPicName(), upLoadPath, tabModelTry.getPicName());
+            List<String> changeFile = changeFileName(list, tabModelTry.getIsInsert().equals("Y"), upLoadPath + "/" + tabModelTry.getPicName(), upLoadPath, tabModelTry.getPicName(),true);
             for (String url : changeFile) {
                 String picid = UUID.randomUUID().toString().replace("-", "");
                 TabModelTryOrg modelTryOrg = new TabModelTryOrg();
