@@ -1,5 +1,5 @@
 # 🎉 WGAI训练识别平台 V5.1 重磅发布!
-
+### —— WGAI，让AI训练更简单、更自由支持本地离线化:人脸识别、OCR、语音识别、 YOLOv5 ~ YOLOv11 模型训练与识别，全面兼容 OpenCV DNN / ONNX CPU & GPU 加速！
 ## ✨ 新增人脸识别功能
 
 ### 核心亮点
@@ -82,6 +82,6 @@
 *   **开源地址GitHub**：<https://github.com/dromara/wgai>
 *   **体验地址**：<http://1.95.152.91:9999/>   密码：wgai wgai@2024
 *   **演示视频**：<https://www.bilibili.com/video/BV13C9BYiEFS?t=38.4>
-*   **加入社群**：![shequn](./shequn.jpg)
+*   **加入社群**：![shequn](./xingqiu.png)
 ----
 > 🔄 持续更新 · 专注本地化AI不被第三方卡脖子 · 永久开源

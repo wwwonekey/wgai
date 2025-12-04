@@ -129,7 +129,7 @@
 
 [//]: # (<img src="wg/chatpic.jpg" width="300px"  height="300px">)
 <img src="wg/qqq.jpg" width="300px"  height="500px">
-<img src="wg/weixinqun.jpg" width="400px"  height="500px">
+<img src="wg/weixinqun2.jpg" width="400px"  height="500px">
 
 [//]: # (<img src="wg/xingqiu.png" width="500px"  height="280px">)
 
