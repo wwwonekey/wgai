@@ -7,6 +7,7 @@ import org.jeecg.modules.demo.face.entity.FaceBox;
 import org.jeecg.modules.demo.face.entity.TabFacePic;
 import org.jeecg.modules.demo.face.mapper.TabFacePicMapper;
 import org.jeecg.modules.demo.face.service.ITabFacePicService;
+import org.jeecg.modules.demo.face.util.GenderAgeResult;
 import org.jeecg.modules.demo.train.service.impl.TabModelTryServiceImpl;
 import org.jeecg.modules.tab.AIModel.AIModelYolo3;
 import org.jeecg.modules.tab.entity.TabAiModel;
@@ -24,8 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static org.jeecg.modules.tab.AIModel.AIModelYolo3.detectFaces;
-import static org.jeecg.modules.tab.AIModel.AIModelYolo3.extractFaceFeature;
+import static org.jeecg.modules.tab.AIModel.AIModelYolo3.*;
 
 /**
  * @Description: 人脸图片库
@@ -148,17 +148,33 @@ public class TabFacePicServiceImpl extends ServiceImpl<TabFacePicMapper, TabFace
         String picUrl=tabFacePic.getFacePic();
         List<FaceBox> faces = detectFaces(faceDetectionModel, picUrl, upLoadPath, false);
         if (!faces.isEmpty()) {
-            float[] feature = extractFaceFeature(faceRecognitionModel, picUrl,
-                    faces.get(0), upLoadPath, false);
 
-            // 在数据库中搜索匹配的人脸
-            TabFacePic matchedFace = recognizeFace(feature, 0.5f);
-            if (matchedFace != null) {
-                drawFaceBoxAndLabel( picUrl,   faces.get(0), matchedFace.getFaceName(),  upLoadPath);
-                System.out.println("识别成功：" + matchedFace.getFaceName());
-                matchedFace.setFacePic(picUrl);
-                return matchedFace;
+            if(tabFacePic.getDifyType()!=null&&tabFacePic.getDifyType()==1){ //性别 年龄预测
+                GenderAgeResult geg= predictGenderAge(faceRecognitionModel, picUrl,
+                        faces.get(0), upLoadPath, false);
+                if(geg!=null){
+                    drawFaceBoxAndLabel( picUrl,   faces.get(0), geg.getGender()+"_"+geg.getAge(),  upLoadPath);
+                    tabFacePic.setFacePic(picUrl);
+                    tabFacePic.setGenderAgeResult(geg);
+                    log.info("识别成功！ 表情识别");
+                    return tabFacePic;
+                }
+
+
+            }else{
+                float[] feature = extractFaceFeature(faceRecognitionModel, picUrl,
+                        faces.get(0), upLoadPath, false);
+
+                // 在数据库中搜索匹配的人脸
+                TabFacePic matchedFace = recognizeFace(feature, 0.5f);
+                if (matchedFace != null) {
+                    drawFaceBoxAndLabel( picUrl,   faces.get(0), matchedFace.getFaceName(),  upLoadPath);
+                    System.out.println("识别成功：" + matchedFace.getFaceName());
+                    matchedFace.setFacePic(picUrl);
+                    return matchedFace;
+                }
             }
+
         }
         return null;
     }

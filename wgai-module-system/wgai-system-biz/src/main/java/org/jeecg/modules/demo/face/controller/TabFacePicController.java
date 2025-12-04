@@ -117,7 +117,10 @@ public class TabFacePicController extends JeecgController<TabFacePic, ITabFacePi
 	 //@RequiresPermissions("org.jeecg.modules.demo:tab_face_pic:add")
 	 @PostMapping(value = "/extractFaceFeature")
 	 public Result<TabFacePic> extractFaceFeature(@RequestBody TabFacePic tabFacePic) throws Exception {
+
+
 		 TabFacePic face=tabFacePicService.extractFace(tabFacePic);
+
 		 return Result.ok(face);
 	 }
 

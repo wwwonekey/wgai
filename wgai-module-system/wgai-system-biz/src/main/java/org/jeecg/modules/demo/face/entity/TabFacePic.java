@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import org.jeecg.modules.demo.face.util.GenderAgeResult;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.jeecgframework.poi.excel.annotation.Excel;
 import org.jeecg.common.aspect.annotation.Dict;
@@ -92,4 +93,11 @@ public class TabFacePic implements Serializable {
 
     @TableField(exist = false)
     private  double maxSimilarity;
+
+
+    @TableField(exist = false) //0人脸识别 1.性别识别 2.年龄识别
+    private  Integer difyType;
+
+    @TableField(exist = false)
+    private GenderAgeResult genderAgeResult;
 }

@@ -95,9 +95,27 @@ public class VideoReadPicOnnxNew implements Runnable {
     public void run() {
         threadLocalPushInfo.set(tabAiSubscriptionNew);
         FFmpegFrameGrabber grabber = null;
-
         try {
             grabber = createOptimizedGrabber();
+        }catch (Exception e){
+            log.error("[流创建失败，线程即将退出但不影响其他流] 流: {}, 错误: {}",
+                    tabAiSubscriptionNew.getName(),
+                    e.getMessage());
+
+            // 更新Redis状态，标记该流不可用
+//            try {
+//                redisTemplate.opsForValue(tabAiSubscriptionNew.getId() + "newRunPush", false);
+//                RedisCacheHolder.set(tabAiSubscriptionNew.getId() + "_error_info",
+//                        "流创建失败: " + e.getMessage());
+//            } catch (Exception redisEx) {
+//                log.warn("[更新Redis状态失败]: {}", redisEx.getMessage());
+//            }
+
+            return; // 直接退出，不影响其他线程
+        }
+
+        try {
+
             identifyTypeNewOnnx identifyTypeAll = identifyTypeNewLocal.get();
             List<NetPush> netPushList = threadLocalPushInfo.get().getNetPushList();
 

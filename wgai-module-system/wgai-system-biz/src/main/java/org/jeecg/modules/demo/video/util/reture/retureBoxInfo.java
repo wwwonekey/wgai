@@ -26,7 +26,7 @@ public class retureBoxInfo {
 
     List<retureBoxInfo> infoList;
 
-
+    String name;
 
     /***
      *
