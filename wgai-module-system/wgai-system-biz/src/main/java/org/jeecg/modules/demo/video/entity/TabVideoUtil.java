@@ -129,4 +129,14 @@ public class TabVideoUtil implements Serializable {
 	@Excel(name = "备注3", width = 15)
     @ApiModelProperty(value = "备注3")
     private java.lang.String spateThree;
+
+    @ApiModelProperty(value = "绘制数量")
+    private java.lang.String shapeCount;
+
+    @ApiModelProperty(value = "绘制坐标")
+    private java.lang.String shapeData;
+
+
+    @ApiModelProperty(value = "标注类型")
+    private java.lang.Integer bzType;
 }

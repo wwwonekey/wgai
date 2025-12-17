@@ -2,6 +2,7 @@ package org.jeecg.modules.demo.video.util;
 
 import ai.onnxruntime.*;
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -936,9 +937,26 @@ public class identifyTypeNew {
             }
 
             if(netPush.getIsBy()==0){//开启了 0开启 1未开启
-                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
-                log.info("[是否在区域内]:"+isPointFlag);
-                if(isPointFlag){
+//                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
+
+
+                TabVideoUtil videoUtil = netPush.getTabVideoUtil();
+                boolean inArea;
+
+                // 关键修复：将640×640坐标转换为原图坐标
+                if (videoUtil.getBzType() == null) {
+
+                    inArea = isPointInArea(box.x, box.y,
+                            Double.parseDouble(videoUtil.getCanvasStartx()),
+                            Double.parseDouble(videoUtil.getCanvasStarty()),
+                            Double.parseDouble(videoUtil.getCanvasWidth()),
+                            Double.parseDouble(videoUtil.getCanvasHeight()));
+                } else {
+                    // 新版多形状区域判断（需要解析shapeData并转换坐标）
+                    inArea = isPointInShapeData(box.x, box.y, videoUtil.getShapeData());
+                }
+                log.info("[是否在区域内]:"+inArea);
+                if(inArea){
                     log.info("[在区域内]");
                 }else{
                     log.info("[不在区域内]");
@@ -1309,12 +1327,28 @@ public class identifyTypeNew {
 
             // 画布区域判断
             if (netPush.getIsBy() == 0) {
-                boolean isPointFlag = isPointInArea(box.x, box.y,
-                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()),
-                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),
-                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()),
-                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
-                if (!isPointFlag) {
+//                boolean isPointFlag = isPointInArea(box.x, box.y,
+//                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStartx()),
+//                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasStarty()),
+//                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasWidth()),
+//                        Double.parseDouble(pushInfo.getTabVideoUtil().getCanvasHeight()));
+
+                TabVideoUtil videoUtil = netPush.getTabVideoUtil();
+                boolean inArea;
+
+                // 关键修复：将640×640坐标转换为原图坐标
+                if (videoUtil.getBzType() == null) {
+
+                    inArea = isPointInArea(box.x, box.y,
+                            Double.parseDouble(videoUtil.getCanvasStartx()),
+                            Double.parseDouble(videoUtil.getCanvasStarty()),
+                            Double.parseDouble(videoUtil.getCanvasWidth()),
+                            Double.parseDouble(videoUtil.getCanvasHeight()));
+                } else {
+                    // 新版多形状区域判断（需要解析shapeData并转换坐标）
+                    inArea = isPointInShapeData(box.x, box.y, videoUtil.getShapeData());
+                }
+                if (!inArea) {
                     log.info("框不在画布区域内,跳过");
                     continue;
                 }
@@ -1586,9 +1620,24 @@ public class identifyTypeNew {
             }
 
             if(netPush.getIsBy()==0){//开启了 0开启 1未开启
-                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(netPush.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(netPush.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasHeight()));
-                log.info("[是否在区域内]:"+isPointFlag);
-                if(isPointFlag){
+            //    boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(netPush.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(netPush.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasHeight()));
+                TabVideoUtil videoUtil = netPush.getTabVideoUtil();
+                boolean inArea;
+
+                // 关键修复：将640×640坐标转换为原图坐标
+                if (videoUtil.getBzType() == null) {
+
+                    inArea = isPointInArea(box.x, box.y,
+                            Double.parseDouble(videoUtil.getCanvasStartx()),
+                            Double.parseDouble(videoUtil.getCanvasStarty()),
+                            Double.parseDouble(videoUtil.getCanvasWidth()),
+                            Double.parseDouble(videoUtil.getCanvasHeight()));
+                } else {
+                    // 新版多形状区域判断（需要解析shapeData并转换坐标）
+                    inArea = isPointInShapeData(box.x, box.y, videoUtil.getShapeData());
+                }
+                log.info("[是否在区域内]:"+inArea);
+                if(inArea){
                     log.info("[在区域内]");
                 }else{
                     log.info("[不在区域内]");
@@ -1944,9 +1993,24 @@ public class identifyTypeNew {
             }
 
             if(netPush.getIsBy()==0){//开启了 0开启 1未开启
-                boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(netPush.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(netPush.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasHeight()));
-                log.info("[是否在区域内]:"+isPointFlag);
-                if(isPointFlag){
+             //   boolean isPointFlag= isPointInArea(box.x, box.y,  Double.parseDouble(netPush.getTabVideoUtil().getCanvasStartx()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasStarty()),  Double.parseDouble(netPush.getTabVideoUtil().getCanvasWidth()), Double.parseDouble(netPush.getTabVideoUtil().getCanvasHeight()));
+                TabVideoUtil videoUtil = netPush.getTabVideoUtil();
+                boolean inArea;
+
+                // 关键修复：将640×640坐标转换为原图坐标
+                if (videoUtil.getBzType() == null) {
+
+                    inArea = isPointInArea(box.x, box.y,
+                            Double.parseDouble(videoUtil.getCanvasStartx()),
+                            Double.parseDouble(videoUtil.getCanvasStarty()),
+                            Double.parseDouble(videoUtil.getCanvasWidth()),
+                            Double.parseDouble(videoUtil.getCanvasHeight()));
+                } else {
+                    // 新版多形状区域判断（需要解析shapeData并转换坐标）
+                    inArea = isPointInShapeData(box.x, box.y, videoUtil.getShapeData());
+                }
+                log.info("[是否在区域内]:"+inArea);
+                if(inArea){
                     log.info("[在区域内]");
                 }else{
                     log.info("[不在区域内]");
@@ -2376,12 +2440,23 @@ public class identifyTypeNew {
         for (FinalDetectionResult det : allDetections) {
             // 区域过滤（保留原有逻辑）
             if (netPush.getIsBy() == 0) {
-                boolean isPointFlag = isPointInArea(det.x, det.y,
-                        Double.parseDouble(netPush.getTabVideoUtil().getCanvasStartx()),
-                        Double.parseDouble(netPush.getTabVideoUtil().getCanvasStarty()),
-                        Double.parseDouble(netPush.getTabVideoUtil().getCanvasWidth()),
-                        Double.parseDouble(netPush.getTabVideoUtil().getCanvasHeight()));
-                if (!isPointFlag) {
+
+                TabVideoUtil videoUtil = netPush.getTabVideoUtil();
+                boolean inArea;
+
+                // 关键修复：将640×640坐标转换为原图坐标
+                if (videoUtil.getBzType() == null) {
+
+                    inArea = isPointInArea(det.x, det.y,
+                            Double.parseDouble(videoUtil.getCanvasStartx()),
+                            Double.parseDouble(videoUtil.getCanvasStarty()),
+                            Double.parseDouble(videoUtil.getCanvasWidth()),
+                            Double.parseDouble(videoUtil.getCanvasHeight()));
+                } else {
+                    // 新版多形状区域判断（需要解析shapeData并转换坐标）
+                    inArea = isPointInShapeData(det.x, det.y, videoUtil.getShapeData());
+                }
+                if (!inArea) {
                     log.info("[不在指定区域内，跳过]");
                     continue;
                 }
@@ -2451,6 +2526,75 @@ public class identifyTypeNew {
         return true;
     }
 
+    private double scaleCoordinate(double coord, int modelSize, double originalSize) {
+        return coord * (originalSize / modelSize);
+    }
+    private boolean isPointInShapeData(double x640, double y640, String shapeDataJson) {
+        try {
+            JSONObject shapeData = JSON.parseObject(shapeDataJson);
+
+            // 获取原图尺寸
+            int imageWidth = shapeData.getIntValue("imageWidth");
+            int imageHeight = shapeData.getIntValue("imageHeight");
+
+            // ✅ 坐标转换：640×640 → 原图尺寸
+            double xOriginal = scaleCoordinate(x640, 640, imageWidth);
+            double yOriginal = scaleCoordinate(y640, 640, imageHeight);
+
+            log.debug("坐标转换: 640系({}, {}) → 原图系({}, {}) [原图尺寸: {}×{}]",
+                    x640, y640, xOriginal, yOriginal, imageWidth, imageHeight);
+
+            // 获取所有形状
+            JSONArray shapes = shapeData.getJSONArray("shapes");
+            if (shapes == null || shapes.isEmpty()) {
+                log.warn("shapeData 中没有定义任何形状");
+                return false;
+            }
+
+            // 遍历所有形状，只要在任意一个形状内就返回true
+            for (int i = 0; i < shapes.size(); i++) {
+                JSONObject shape = shapes.getJSONObject(i);
+                String type = shape.getString("type");
+                JSONObject coordinates = shape.getJSONObject("coordinates");
+
+                boolean inThisShape = false;
+
+                if ("rect".equals(type)) {
+                    // 矩形判断
+                    double startX = coordinates.getDoubleValue("startX");
+                    double startY = coordinates.getDoubleValue("startY");
+                    double endX = coordinates.getDoubleValue("endX");
+                    double endY = coordinates.getDoubleValue("endY");
+
+                    inThisShape = xOriginal >= startX && xOriginal <= endX
+                            && yOriginal >= startY && yOriginal <= endY;
+
+                    log.debug("矩形{} 判断: ({}, {}) in [{}, {}] - [{}, {}] = {}",
+                            i + 1, xOriginal, yOriginal, startX, startY, endX, endY, inThisShape);
+
+                } else if ("polygon".equals(type)) {
+                    // 多边形判断（使用射线法）
+                    JSONArray points = coordinates.getJSONArray("points");
+                    inThisShape = isPointInPolygon(xOriginal, yOriginal, points);
+
+                    log.debug("多边形{} 判断: ({}, {}) 顶点数={} 结果={}",
+                            i + 1, xOriginal, yOriginal, points.size(), inThisShape);
+                }
+
+                if (inThisShape) {
+                    log.info("✅ 点在区域内 - {}{}内", type.equals("rect") ? "矩形" : "多边形", i + 1);
+                    return true;
+                }
+            }
+
+            log.info("❌ 点不在任何定义的区域内");
+            return false;
+
+        } catch (Exception e) {
+            log.error("解析 shapeData 失败", e);
+            return false;
+        }
+    }
     /**
      * 检测结果封装类
      */
@@ -2500,7 +2644,66 @@ public class identifyTypeNew {
         // 检查点是否在区域内
         return px >= x && px <= x2 && py >= y && py <= y2;
     }
+    public static boolean isPointInArea(double px, double py, String json) {
+        JSONObject object = JSONObject.parseObject(json);
+        JSONArray jsonArray = object.getJSONArray("shapes");
 
+        // 遍历所有形状，只要点在任意一个形状内就返回 true
+        for (int i = 0; i < jsonArray.size(); i++) {
+            JSONObject shape = jsonArray.getJSONObject(i);
+            String type = shape.getString("type");
+            JSONObject coordinates = shape.getJSONObject("coordinates");
+
+            if ("rect".equals(type)) {
+                // 矩形判定
+                double startX = coordinates.getDoubleValue("startX");
+                double startY = coordinates.getDoubleValue("startY");
+                double endX = coordinates.getDoubleValue("endX");
+                double endY = coordinates.getDoubleValue("endY");
+
+                // 判断点是否在矩形内
+                if (px >= startX && px <= endX && py >= startY && py <= endY) {
+                    return true;
+                }
+
+            } else if ("polygon".equals(type)) {
+                // 多边形判定 - 使用射线法
+                JSONArray points = coordinates.getJSONArray("points");
+                if (isPointInPolygon(px, py, points)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+    /**
+     * 射线法判断点是否在多边形内
+     * 原理：从点向右发射一条射线，计算与多边形边界的交点数
+     * 交点数为奇数则点在多边形内，偶数则在外
+     */
+    private static boolean isPointInPolygon(double px, double py, JSONArray points) {
+        int n = points.size();
+        boolean inside = false;
+
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            JSONObject pi = points.getJSONObject(i);
+            JSONObject pj = points.getJSONObject(j);
+
+            double xi = pi.getDoubleValue("x");
+            double yi = pi.getDoubleValue("y");
+            double xj = pj.getDoubleValue("x");
+            double yj = pj.getDoubleValue("y");
+
+            // 判断射线是否与边相交
+            if (((yi > py) != (yj > py)) &&
+                    (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+                inside = !inside;
+            }
+        }
+
+        return inside;
+    }
 
     public String setNmsName(String WareText,String name){
 

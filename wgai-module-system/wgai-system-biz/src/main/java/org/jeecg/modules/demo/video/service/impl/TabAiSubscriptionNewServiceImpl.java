@@ -423,8 +423,10 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
         try {
             TabAiSubscriptionNew tabAiSubscriptionNew1=this.getById(id);
             FFmpegFrameGrabber  grabber= createOptimizedGrabber(tabAiSubscriptionNew1);
+            log.info("读取最新图片开始{}",tabAiSubscriptionNew1.getBeginEventTypes());
             Frame frame;
             while (true){
+                log.info("读取最新图片{}",tabAiSubscriptionNew1.getBeginEventTypes());
                 frame = grabber.grabImage();
                 if(frame==null){
                     continue;
