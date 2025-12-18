@@ -43,6 +43,8 @@
 ## ⁉️ 演示视频
 > 内置ORC识别,图片识别,视频识别,训练模型,训练自己的数字人以前别人卡我们脖子当老大，现在我要自己当老大别人请求我！
 >
+> 演示视频0：[<span style="color: blue;">@平台整体功能介绍 </span>](https://www.bilibili.com/video/BV1Pcq5B6EJY/?spm_id_from=333.1387.homepage.video_card.click)
+>
 > 演示视频1：[<span style="color: blue;">@如何标注训练自己的识别模型 </span>](https://www.bilibili.com/video/BV13C9BYiEFS/?t=38.4)
 >
 > 演示视频2：[<span style="color: blue;">@训练完成如何使用</span>](https://www.bilibili.com/video/BV1fJwhe7E1G/?spm_id_from=333.1387.homepage.video_card.click&vd_source=73d8a30a253a95bdb8b89a5fec80d9b9)
