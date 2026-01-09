@@ -1671,19 +1671,39 @@ public class identifyTypeNewOnnx {
      * 图像预处理：HWC -> CHW，归一化
      */
     private float[] preprocessImage(Mat processedImage) {
-        Mat blob = new Mat();
-        processedImage.convertTo(blob, CvType.CV_32F, 1.0 / 255.0);
+        Mat blob = null;
+        List<Mat> channels = null;
 
-        List<Mat> channels = new ArrayList<>();
-        Core.split(blob, channels);
+        try {
+            blob = new Mat();
+            processedImage.convertTo(blob, CvType.CV_32F, 1.0 / 255.0);
 
-        float[] inputData = new float[3 * 640 * 640];
-        for (int c = 0; c < 3; c++) {
-            float[] data = new float[640 * 640];
-            channels.get(c).get(0, 0, data);
-            System.arraycopy(data, 0, inputData, c * 640 * 640, 640 * 640);
+            channels = new ArrayList<>();
+            Core.split(blob, channels);
+
+            float[] inputData = new float[3 * 640 * 640];
+            for (int c = 0; c < 3; c++) {
+                float[] data = new float[640 * 640];
+                channels.get(c).get(0, 0, data);
+                System.arraycopy(data, 0, inputData, c * 640 * 640, 640 * 640);
+            }
+            return inputData;
+
+        } finally {
+            // ✅ 释放 blob
+            if (blob != null) {
+                blob.release();
+            }
+
+            // ✅ 释放所有 channels
+            if (channels != null) {
+                for (Mat channel : channels) {
+                    if (channel != null) {
+                        channel.release();
+                    }
+                }
+            }
         }
-        return inputData;
     }
 
     public void setBeforeImg(Mat image,String txt){
@@ -2233,21 +2253,34 @@ public class identifyTypeNewOnnx {
 
         // 缩放图像
         Mat resized = new Mat();
-        Imgproc.resize(image, resized, new Size(newWidth, newHeight));
+        try {
 
-        // 创建目标尺寸的画布（灰色填充）
-        Mat letterboxed = new Mat(targetHeight, targetWidth, image.type(), new Scalar(114, 114, 114));
+            Imgproc.resize(image, resized, new Size(newWidth, newHeight));
 
-        // 计算居中位置
-        int dx = (targetWidth - newWidth) / 2;
-        int dy = (targetHeight - newHeight) / 2;
+            // 创建目标尺寸的画布（灰色填充）
+            Mat letterboxed = new Mat(targetHeight, targetWidth, image.type(), new Scalar(114, 114, 114));
 
-        // 将缩放后的图像复制到画布中心
-        Rect roi = new Rect(dx, dy, newWidth, newHeight);
-        Mat roiMat = new Mat(letterboxed, roi);
-        resized.copyTo(roiMat);
+            // 计算居中位置
+            int dx = (targetWidth - newWidth) / 2;
+            int dy = (targetHeight - newHeight) / 2;
 
-        return letterboxed;
+            // 将缩放后的图像复制到画布中心
+            Rect roi = new Rect(dx, dy, newWidth, newHeight);
+            Mat roiMat = new Mat(letterboxed, roi);
+            try{
+                resized.copyTo(roiMat);
+                return letterboxed;
+            }finally {
+                //不单独释放
+            }
+
+        }finally {
+            if(resized!=null){
+                resized.release();
+            }
+        }
+
+
     }
 
 }
