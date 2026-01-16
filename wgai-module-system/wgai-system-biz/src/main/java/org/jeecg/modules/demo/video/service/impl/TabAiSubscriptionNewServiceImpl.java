@@ -8,6 +8,9 @@ import org.bytedeco.ffmpeg.global.avutil;
 import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.opencv.global.opencv_imgcodecs;
+import org.bytedeco.opencv.opencv_core.Mat;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.modules.demo.tab.service.impl.TabAiBaseServiceImpl;
 import org.jeecg.modules.demo.video.entity.*;
@@ -36,6 +39,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.jeecg.modules.demo.video.util.frame.FrameQualityFilter.printAverageRGB;
 
 /**
  * @Description: 多程第三方订阅 - 针对64路视频优化
@@ -529,27 +534,137 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
     @Override
     public Result<String> getVideoPic(String id) {
+        log.info("=== 开始获取图片 ===");
         String outputPath = upLoadPath + File.separator;
         String picName = id + ".jpg";
+
+        FFmpegFrameGrabber grabber = null;
+        OpenCVFrameConverter.ToMat converter = null;
+
         try {
             TabAiSubscriptionNew tab = this.getById(id);
-            FFmpegFrameGrabber grabber = createOptimizedGrabber(tab);
-            Frame frame;
-            while (true) {
-                frame = grabber.grabImage();
+            log.info("RTSP地址: {}", tab.getBeginEventTypes());
+
+            grabber = createOptimizedGrabber(tab);
+
+            log.info("=== 流信息 ===");
+            log.info("视频编码: {}", grabber.getVideoCodecName());
+            log.info("图像尺寸: {}x{}", grabber.getImageWidth(), grabber.getImageHeight());
+
+            Frame frame = null;
+            int tryCount = 0;
+            int maxTries = 200; // 增加尝试次数
+            boolean foundValidFrame = false;
+
+            log.info("开始查找有效视频帧...");
+
+            // ✅ 使用 grab() + grabFrame() 方法
+            while (tryCount < maxTries && !foundValidFrame) {
+                tryCount++;
+
+
+
+                // 然后用 grabFrame() 获取视频帧
+                // 参数: (audio, video, processImage, keyFramesOnly)
+                frame = grabber.grabFrame(false, true, true, false);
+
                 if (frame != null && frame.image != null) {
-                    Java2DFrameConverter converter = new Java2DFrameConverter();
-                    BufferedImage bufferedImage = converter.convert(frame);
-                    ImageIO.write(bufferedImage, "jpg", new File(outputPath + picName));
+                    log.info("✓ 第 {} 次尝试获取到有效视频帧", tryCount);
+                    log.info("帧信息 - {}x{}, 通道:{}",
+                            frame.imageWidth, frame.imageHeight, frame.imageChannels);
+
+                    foundValidFrame = true;
                     break;
                 }
+
+                // 每20帧打印一次进度
+                if (tryCount % 20 == 0) {
+                    log.info("已处理 {} 帧...", tryCount);
+                }
+
             }
-            grabber.stop();
-            grabber.release();
+
+            if (!foundValidFrame) {
+                log.error("尝试了 {} 次后仍未获取到有效帧", maxTries);
+                return Result.error(picName);
+            }
+
+            // 使用 OpenCV 转换
+            converter = new OpenCVFrameConverter.ToMat();
+            Mat mat = converter.convert(frame);
+
+            if (mat != null && !mat.empty()) {
+                log.info("Mat 转换成功 - 通道:{}, 尺寸:{}x{}",
+                        mat.channels(), mat.cols(), mat.rows());
+
+                String fullPath = outputPath + picName;
+                boolean success = opencv_imgcodecs.imwrite(fullPath, mat);
+
+                if (success) {
+                    log.info("✓ 成功保存图片: {}", picName);
+                } else {
+                    log.error("✗ imwrite 失败");
+                    mat.release();
+                    return Result.error(picName);
+                }
+
+                mat.release();
+            } else {
+                log.error("Mat 转换失败");
+                return Result.error(picName);
+            }
+
         } catch (Exception ex) {
+            log.error("获取失败！", ex);
             ex.printStackTrace();
+            return Result.error(picName);
+        } finally {
+            if (converter != null) {
+                try {
+                    converter.close();
+                } catch (Exception e) {
+                    log.warn("关闭converter失败", e);
+                }
+            }
+            if (grabber != null) {
+                try {
+                    grabber.stop();
+                    grabber.release();
+                } catch (Exception e) {
+                    log.warn("释放grabber失败", e);
+                }
+            }
         }
+
         return Result.OK(picName);
+    }
+    // 简单的图像有效性检查
+    private boolean isValidImage(BufferedImage image) {
+        if (image == null) return false;
+
+        // 采样检查：检查图像中心区域的像素是否有变化
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int centerX = width / 2;
+        int centerY = height / 2;
+
+        int sampleSize = Math.min(50, Math.min(width, height) / 4);
+        int firstPixel = image.getRGB(centerX, centerY);
+
+        // 检查周围像素是否都相同（全灰图像所有像素都一样）
+        for (int i = 0; i < sampleSize; i += 5) {
+            for (int j = 0; j < sampleSize; j += 5) {
+                int x = centerX + i - sampleSize / 2;
+                int y = centerY + j - sampleSize / 2;
+                if (x >= 0 && x < width && y >= 0 && y < height) {
+                    if (image.getRGB(x, y) != firstPixel) {
+                        return true; // 发现不同颜色，说明是有效图像
+                    }
+                }
+            }
+        }
+
+        return false; // 所有采样点颜色相同，可能是灰图
     }
 
     @Override
@@ -559,35 +674,47 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
 
     public FFmpegFrameGrabber createOptimizedGrabber(TabAiSubscriptionNew tab) throws Exception {
         FFmpegFrameGrabber grabber = new FFmpegFrameGrabber(tab.getBeginEventTypes());
+        log.info("当前解码类型{}",tab.getEventTypes());
+        // GPU设置
+//        if (tab.getEventTypes().equals("1")) {
+//            grabber.setOption("hwaccel", "cuda");
+//            grabber.setOption("hwaccel_device", "0");
+//            grabber.setOption("hwaccel_output_format", "cuda");
+//            log.info("[GPU加速]");
+//        } else {
+//            grabber.setOption("hwaccel", "qsv");
+//            log.info("[Intel加速]");
+//        }
+
+        // 基础设置
         grabber.setOption("loglevel", "-8");
-
-        if (tab.getEventTypes().equals("1")) {
-            grabber.setOption("hwaccel", "cuda");
-            grabber.setOption("hwaccel_device", "0");
-            grabber.setOption("hwaccel_output_format", "cuda");
-        }
-
         grabber.setOption("rtsp_transport", "tcp");
-        grabber.setOption("stimeout", "3000000");
+        grabber.setOption("rtsp_flags", "prefer_tcp");
+
+        // ==========  修复3：缩短超时时间，快速失败 ==========
+        grabber.setOption("stimeout", "10000000");   // 10秒连接超时（原5秒）
+        grabber.setOption("rw_timeout", "10000000"); // 10秒读写超时
+        grabber.setOption("timeout", "10000000");    // 10秒总超时
+
         grabber.setPixelFormat(avutil.AV_PIX_FMT_BGR24);
-        grabber.setOption("threads", "auto");
-        grabber.setOption("preset", "ultrafast");
-        grabber.setVideoOption("tune", "zerolatency");
+
+        // 实时流优化
+        grabber.setOption("flags", "low_delay");
         grabber.setOption("max_delay", "500000");
-        grabber.setOption("buffer_size", "1048576");
-        grabber.setOption("framedrop", "1");
-        grabber.setOption("analyzeduration", "5000000");
-        grabber.setOption("probesize", "2097152");
-        grabber.setOption("rw_timeout", "10000000");
-        grabber.setOption("an", "1");
-        grabber.setOption("flags", "+discardcorrupt+genpts");
-        grabber.setOption("flags2", "+fast");
+        grabber.setOption("buffer_size", "512000");
+        grabber.setOption("fflags", "nobuffer+flush_packets+discardcorrupt");
+        grabber.setOption("flags2", "fast");
         grabber.setOption("err_detect", "compliant");
-        grabber.setVideoOption("refs", "1");
-        grabber.setVideoOption("bf", "0");
-        grabber.setOption("skip_frame", "nokey");
-        grabber.setOption("strict", "experimental");
-        grabber.start();
+        grabber.setOption("framedrop", "1");
+        
+        log.info("[开始start] 可能阻塞...");
+        long startTime = System.currentTimeMillis();
+
+        grabber.start(); // 可能阻塞，但有超时保护
+
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("[✓ start完成] 耗时: {}ms", duration);
+
         return grabber;
     }
 }
