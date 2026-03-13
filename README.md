@@ -21,7 +21,7 @@
 > 
 ## 🔆使用说明与常见问题(图文版)！
 >
-> [<span style="color: blue;">@WGAI使用说明（图解版本） </span>](https://www.yuque.com/oxygen-bw8y8/eda0sn/xrii46vitqfz74h2?singleDoc)
+> 使用说明与常见问题 :[<span style="color: blue;">@WGAI使用说明（图解版本） </span>](https://www.yuque.com/oxygen-bw8y8/eda0sn/xrii46vitqfz74h2?singleDoc)
 >
 > 因为不设立商业版无收入来源,需要支撑服务器更新动力只有星球收入,所以教程都放在了星球内,知识星球中有问必答白天9-6（周一到周五) 
 > 不卖课、不限制代码、星球完整教程只落地使用,实力强可自行阅读代码使用！如果对你有用可捐赠一杯咖啡！
@@ -136,7 +136,7 @@
 ## 在线捐赠
 ### 如果此项目对你有用捐赠一下长期发展维护（捐赠>100前100名赠送AI秘籍）
 <img src="wg/wechatpay.jpg" width="300px"  height="300px"> 
-<img src="wg/zfb.jpg" width="300px"  height="300px">
+<img src="wg/zfb.png" width="300px"  height="300px">
 
 ### 捐赠名单按捐赠顺序前后鸣谢
 @喜  |  @小白
