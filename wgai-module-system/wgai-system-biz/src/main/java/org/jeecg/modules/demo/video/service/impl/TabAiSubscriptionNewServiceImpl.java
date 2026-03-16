@@ -627,6 +627,9 @@ public class TabAiSubscriptionNewServiceImpl extends ServiceImpl<TabAiSubscripti
             String fullPath = outputPath + picName;
 
             Imgcodecs.imwrite(fullPath, mat);
+            //保存到redis
+
+            redisTemplate.opsForValue().set(id,picName);
 
 
 

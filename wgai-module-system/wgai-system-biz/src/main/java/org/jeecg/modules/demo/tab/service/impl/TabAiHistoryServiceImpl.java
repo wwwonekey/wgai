@@ -947,6 +947,7 @@ public class TabAiHistoryServiceImpl extends ServiceImpl<TabAiHistoryMapper, Tab
                     break;
                 }//v5
                 case "11":
+                case "26":
                 {
                     if(tabAiModelBund.getSpaceOne().equals("0")) { //当前为图片
                         int a = this.saveIdentifyYolov(tabAiModelBund, path, aiModel.getSpareOne());

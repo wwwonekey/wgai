@@ -76,6 +76,7 @@ public class ShiroConfig {
             }
         }
         // 配置不会被拦截的链接 顺序判断
+        filterChainDefinitionMap.put("/api/map/**", "anon"); //文件下发
         filterChainDefinitionMap.put("/tab/tabAiModel/receiveModel", "anon"); //文件下发
         filterChainDefinitionMap.put("/video/tabAiSubscriptionNew/test", "anon"); //文件下发
         filterChainDefinitionMap.put("/sys/cas/client/validateLogin", "anon"); //cas验证登录
@@ -124,15 +125,16 @@ public class ShiroConfig {
         filterChainDefinitionMap.put("/**/*.woff2", "anon");
         // update-begin--Author:sunjianlei Date:20190813 for：排除字体格式的后缀
 
-//        filterChainDefinitionMap.put("/druid/**", "anon");
-//        filterChainDefinitionMap.put("/swagger-ui.html", "anon");
-//        filterChainDefinitionMap.put("/swagger**/**", "anon");
-//        filterChainDefinitionMap.put("/webjars/**", "anon");
-//        filterChainDefinitionMap.put("/v2/**", "anon");
+        filterChainDefinitionMap.put("/druid/**", "anon");
+        filterChainDefinitionMap.put("/swagger-ui.html", "anon");
+        filterChainDefinitionMap.put("/swagger**/**", "anon");
+        filterChainDefinitionMap.put("/webjars/**", "anon");
+        filterChainDefinitionMap.put("/v2/**", "anon");
 
         filterChainDefinitionMap.put("/sys/annountCement/show/**", "anon");
         filterChainDefinitionMap.put("/tab/tabAiSubscription/**", "anon");
         filterChainDefinitionMap.put("/tab/tabAiBase/**", "anon");
+        filterChainDefinitionMap.put("/tab/tabAiModel/returnPicPose/**", "anon");
         //积木报表排除
      //   filterChainDefinitionMap.put("/jmreport/**", "anon");
         filterChainDefinitionMap.put("/**/*.js.map", "anon");

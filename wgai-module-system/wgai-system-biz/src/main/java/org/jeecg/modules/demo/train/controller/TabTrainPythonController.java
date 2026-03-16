@@ -111,7 +111,7 @@ public class TabTrainPythonController extends JeecgController<TabTrainPython, IT
 		 TabModelTry tabModelTry=tabModelTryService.getById(id);
 		 if(tabModelTry.getModelType().equals("2")){//v5 v8 v10
 			 tabTrainPythonService.startPy(id,null);
-		 }else if(tabModelTry.getModelType().equals("11")){ //v11
+		 }else if(tabModelTry.getModelType().equals("11")||tabModelTry.getModelType().equals("26")){ //v11
 			 tabTrainPythonService.startPyV11(id,null);
 		 }
 

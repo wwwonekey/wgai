@@ -11,6 +11,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.apache.commons.lang.StringUtils;
 import org.jeecg.common.api.vo.Result;
 import org.jeecg.common.system.query.QueryGenerator;
 import org.jeecg.common.util.oConvertUtils;
@@ -30,6 +32,7 @@ import org.jeecgframework.poi.excel.view.JeecgEntityExcelView;
 import org.jeecg.common.system.base.controller.JeecgController;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.MultipartHttpServletRequest;
@@ -119,7 +122,8 @@ public class TabVideoUtilController extends JeecgController<TabVideoUtil, ITabVi
 		 return Result.error("未找到");
 
 	 }
-
+	 @Autowired
+	 RedisTemplate redisTemplate;
 	 @AutoLog(value = "获取视频原图")
 	 @ApiOperation(value="获取视频原图", notes="获取视频原图")
 	 //@RequiresPermissions("org.jeecg.modules.demo:tab_ai_subscription_new:edit")
@@ -128,6 +132,12 @@ public class TabVideoUtilController extends JeecgController<TabVideoUtil, ITabVi
 
 		 TabVideoUtil tabVideoUtil1= tabVideoUtilService.getById(id);
 		 if(tabVideoUtil1!=null){
+			 if(StringUtils.isNotEmpty(tabVideoUtil1.getVideoId())){
+				 Object 	pic= redisTemplate.opsForValue().get(tabVideoUtil1.getVideoId());
+				 if(pic!=null){
+					 tabVideoUtil1.setRemerk(tabVideoUtil1.getVideoId()+".jpg");
+				 }
+			 }
 			 return Result.ok(tabVideoUtil1);
 		 }
 		 return Result.error("未找到");

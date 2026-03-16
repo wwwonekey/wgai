@@ -14,6 +14,7 @@ import org.bytedeco.javacv.FFmpegFrameGrabber;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.jeecg.common.util.RestUtil;
+import org.jeecg.modules.demo.audio.entity.TabAudioDevice;
 import org.jeecg.modules.demo.tab.entity.TabAiBase;
 import org.jeecg.modules.demo.video.entity.TabAiSubscriptionNew;
 import org.jeecg.modules.demo.video.entity.TabVideoUtil;
@@ -45,6 +46,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
+import static org.jeecg.modules.demo.audio.util.audioSend.getToken;
+import static org.jeecg.modules.demo.audio.util.audioSend.postAudioText;
 import static org.jeecg.modules.tab.AIModel.AIModelYolo3.CommonColors;
 import static org.jeecg.modules.tab.AIModel.AIModelYolo3.base64Image;
 import static org.jeecg.modules.tab.AIModel.pose.FallDetectionResult.detectFallOrStand;
@@ -1401,6 +1404,18 @@ public class identifyTypeNewOnnx {
                     log.info("[未开启录像]");
                 }
 
+                //`临时使用播报
+                if(StringUtils.isNotEmpty(pushInfo.getRemake())){
+                    log.info("开始播报！~~~~~~{}",pushInfo.getRemake());
+                    log.info("播报内容！~~~~~~{}",audioText);
+                    if(StringUtils.isNotEmpty(audioText)){
+                        TabAudioDevice tabAudioDevice=new TabAudioDevice();
+                        tabAudioDevice.setDeivceUrl("http://192.168.0.160:8307");
+                        String token= getToken(tabAudioDevice);
+                        postAudioText(token,tabAudioDevice,audioText);
+                    }
+                }
+
                 if (pushInfo.getPushStatic() == 0) {// 0 开启 1未开启
                     log.info("[推送第三方结果]：");
                     if(!pushInfo.getEventUrl().equals("localhost")){ //不进行推送
@@ -2021,7 +2036,7 @@ public class identifyTypeNewOnnx {
             // ✅ 坐标转换：640×640 → 原图尺寸
             double xOriginal = scaleCoordinate(x640, 640, imageWidth);
             double yOriginal = scaleCoordinate(y640, 640, imageHeight);
-
+            log.info("绘制区域{}",shapeDataJson);
             log.info("坐标转换: 640系({}, {}) → 原图系({}, {}) [原图尺寸: {}×{}]",
                     x640, y640, xOriginal, yOriginal, imageWidth, imageHeight);
 
@@ -2063,12 +2078,12 @@ public class identifyTypeNewOnnx {
                 }
 
                 if (inThisShape) {
-                    log.info("✅ 点在区域内 - {}{}内", type.equals("rect") ? "矩形" : "多边形", i + 1);
+                    log.info(" 点在区域内 - {}{}内", type.equals("rect") ? "矩形" : "多边形", i + 1);
                     return true;
                 }
             }
 
-            log.info("❌ 点不在任何定义的区域内");
+            log.info(" 点不在任何定义的区域内");
             return false;
 
         } catch (Exception e) {

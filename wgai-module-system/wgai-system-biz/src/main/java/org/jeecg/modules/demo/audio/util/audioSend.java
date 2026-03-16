@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static org.jeecg.common.util.RestUtil.*;
 
@@ -104,15 +105,17 @@ public class audioSend {
         headers.add("NASAuthToken", token);
         JSONObject jsonObject=new JSONObject();
         jsonObject.put("DataType","TempTaskRequest"); //数据类型，必须为"TempTaskRequest
-        jsonObject.put("TaskName","WGAI_Send");
+        long time = System.currentTimeMillis() % 1_000_000; // 6位
+        int random = ThreadLocalRandom.current().nextInt(1000, 9999); //4位
+        jsonObject.put("TaskName","WGAI_Send"+time+random);
         jsonObject.put("TaskType",7);
         jsonObject.put("Priority",0);
         jsonObject.put("AutoPause",0);
         jsonObject.put("StartMode",2);
         jsonObject.put("EndMode",0);
-        jsonObject.put("PlayMode",1);
-        jsonObject.put("LoopTimes",2);
-        jsonObject.put("TaskVolume",3);
+        jsonObject.put("PlayMode",2);
+        jsonObject.put("LoopTimes",0);
+        jsonObject.put("TaskVolume",14);
         jsonObject.put("VoiceText",unicode);
         jsonObject.put("PlayerList",new String[]{"0001E28"});
         log.info(jsonObject.toJSONString());

@@ -47,37 +47,37 @@
         </dependency>
     </dependencies>
 <!--  i第一次  完整版本打包 剥离出lib config 下次可用极简打包-->
-<!--    <build>-->
-<!--        <plugins>-->
-<!--            <plugin>-->
-<!--                <groupId>org.springframework.boot</groupId>-->
-<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
-<!--            </plugin>-->
-<!--        </plugins>-->
-<!--    </build>-->
-<!--    极简打包 打包命令 mvn clean package-->
     <build>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <layout>ZIP</layout>
-                    <includes>
-                        <include>
-                            <groupId>nothing</groupId>
-                            <artifactId>nothing</artifactId>
-                        </include>
-                    </includes>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
         </plugins>
     </build>
+<!--    极简打包 打包命令 mvn clean package-->
+<!--    <build>-->
+<!--        <plugins>-->
+<!--            <plugin>-->
+<!--                <groupId>org.springframework.boot</groupId>-->
+<!--                <artifactId>spring-boot-maven-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <layout>ZIP</layout>-->
+<!--                    <includes>-->
+<!--                        <include>-->
+<!--                            <groupId>nothing</groupId>-->
+<!--                            <artifactId>nothing</artifactId>-->
+<!--                        </include>-->
+<!--                    </includes>-->
+<!--                </configuration>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <goals>-->
+<!--                            <goal>repackage</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
+<!--        </plugins>-->
+<!--    </build>-->
 </project>
