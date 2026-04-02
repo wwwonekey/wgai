@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://hertzbeat.apache.org">
-     <img alt="hertzbeat" src="wg/100100.png" width="16-640">
+     <img alt="hertzbeat" src="wg/100100.png" width="200">
   </a>
 </p>
 
@@ -24,9 +24,9 @@
 ---
 
 ## 🎡 项目介绍
-**WGAI** 是一款融合了 OpenCV、YOLO、OCR、人脸识别、语音识别等多种内核的综合 AI 管理平台。支持 AI 智能客服、大语言模型、数字人定制。
+**WGAI** 是一款融合了 OpenCV、YOLO、OCR、数字人、AGV自动导航、人脸识别、语音识别等多种内核的综合 AI 管理平台。国内top10支持离线化工业级多模态AI平台。
 * **架构优势**：训练与识别完全分离，有效避免内存与 GPU 过度消耗，支持自主离线化部署。
-* **核心功能**：支持在线标注训练、边缘视频分析（16-64路实时分析）、语音/OCR/ChatGPT/数字人全栈服务器支撑。
+* **核心功能**：支持在线标注训练、边缘视频、语音分析盒/OCR/ChatGPT/数字人/AGV 全栈服务器支撑。
 
 ## 📢 商务合作
 > **【广告位招租 · 虚位以待】**
